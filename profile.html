@@ -101,10 +101,10 @@
         }
         .modal-overlay.active .modal-content { transform: scale(1); }
 
-        /* UPDATED: Vertical list fade using mask-image */
+        /* UPDATED: Vertical list fade using mask-image with more coverage */
         .list-fade {
-            -webkit-mask-image: linear-gradient(to bottom, black calc(100% - 120px), transparent 100%);
-            mask-image: linear-gradient(to bottom, black calc(100% - 120px), transparent 100%);
+             -webkit-mask-image: linear-gradient(to bottom, black calc(100% - 200px), transparent 100%);
+            mask-image: linear-gradient(to bottom, black calc(100% - 200px), transparent 100%);
         }
         .list-fade.expanded {
             -webkit-mask-image: none;
@@ -210,20 +210,19 @@
             padding-right: 8px; /* space for scrollbar */
         }
 
-        /* UPDATED: Horizontal Preview Carousel Styles */
+        /* UPDATED: Horizontal Preview Carousel Styles with more coverage */
         .preview-container {
-            position: relative;
-            /* Apply a mask to smoothly fade out the end of the carousel content */
-            -webkit-mask-image: linear-gradient(to right, black calc(100% - 80px), transparent 100%);
-            mask-image: linear-gradient(to right, black calc(100% - 80px), transparent 100%);
+             -webkit-mask-image: linear-gradient(to right, transparent 0%, black 5%, black calc(100% - 160px), transparent 100%);
+            mask-image: linear-gradient(to right, transparent 0%, black 5%, black calc(100% - 160px), transparent 100%);
         }
         .preview-carousel {
             display: flex;
             gap: 1rem;
             overflow-x: auto;
-            padding: 0.5rem 0.25rem 1.5rem; /* Padding for scrollbar and shadow */
+            padding: 0.5rem;
             -ms-overflow-style: none;  /* IE and Edge */
             scrollbar-width: none;  /* Firefox */
+            scroll-behavior: smooth;
         }
         .preview-carousel::-webkit-scrollbar {
             display: none; /* Chrome, Safari, Opera */
@@ -236,6 +235,38 @@
             transform: translateY(-4px);
             box-shadow: 0 8px 24px rgba(0,0,0,0.5);
         }
+
+        /* NEW: Carousel Arrow Styles */
+        .carousel-arrow {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 10;
+            width: 44px;
+            height: 44px;
+            background: rgba(15, 23, 42, 0.6);
+            -webkit-backdrop-filter: blur(5px);
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 9999px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            transition: all 0.2s ease-in-out;
+        }
+        .carousel-arrow:hover:not(:disabled) {
+            background: rgba(29, 185, 84, 0.5);
+            border-color: rgba(29, 185, 84, 0.8);
+            transform: translateY(-50%) scale(1.1);
+        }
+        .carousel-arrow:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+        .carousel-arrow.left { left: -16px; }
+        .carousel-arrow.right { right: -16px; }
+
 
         /* Genre Tag Styles */
         .genre-tag {
@@ -365,16 +396,24 @@
                 </section>
             </div>
             
-            <!-- REVISED SECTIONS: Now compact previews -->
+            <!-- REVISED SECTIONS: Now with arrows outside the masked container -->
             <section class="fade-in" style="animation-delay: 1s;">
                 <div class="flex justify-between items-center mb-4">
                     <h2 class="text-3xl font-bold text-white">Listening History</h2>
                     <button id="see-all-history" class="btn-secondary py-2 px-4 rounded-lg text-sm">See All</button>
                 </div>
-                <div class="preview-container">
-                    <div id="recently-played-preview" class="preview-carousel">
-                        <!-- History preview will be injected here -->
+                <div class="relative">
+                    <div class="preview-container">
+                        <div id="recently-played-preview" class="preview-carousel">
+                            <!-- History preview will be injected here -->
+                        </div>
                     </div>
+                    <button id="history-arrow-left" class="carousel-arrow left">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                    </button>
+                    <button id="history-arrow-right" class="carousel-arrow right">
+                       <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                    </button>
                 </div>
             </section>
 
@@ -383,10 +422,18 @@
                     <h2 class="text-3xl font-bold text-white">Recent Library Additions</h2>
                     <button id="see-all-saved" class="btn-secondary py-2 px-4 rounded-lg text-sm">See All</button>
                 </div>
-                <div class="preview-container">
-                    <div id="recently-saved-preview" class="preview-carousel">
-                        <!-- Saved preview will be injected here -->
+                <div class="relative">
+                    <div class="preview-container">
+                        <div id="recently-saved-preview" class="preview-carousel">
+                            <!-- Saved preview will be injected here -->
+                        </div>
                     </div>
+                    <button id="saved-arrow-left" class="carousel-arrow left">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                    </button>
+                    <button id="saved-arrow-right" class="carousel-arrow right">
+                       <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                    </button>
                 </div>
             </section>
         </div>
@@ -949,23 +996,61 @@
             }
 
             function renderRecentlyPlayedPreview(items) {
+                const previewLimit = 20;
                 if (!items || items.length === 0) {
                     recentlyPlayedPreview.innerHTML = `<p class="text-slate-400">No recent listening history found.</p>`;
                     document.getElementById('see-all-history').style.display = 'none';
                     return;
                 }
                 document.getElementById('see-all-history').style.display = 'inline-flex';
-                recentlyPlayedPreview.innerHTML = items.slice(0, 10).map(renderPreviewItem).join('');
+                recentlyPlayedPreview.innerHTML = items.slice(0, previewLimit).map(renderPreviewItem).join('');
             }
             
             function renderRecentlySavedPreview(items) {
+                 const previewLimit = 20;
                  if (!items || items.length === 0) {
                     recentlySavedPreview.innerHTML = `<p class="text-slate-400">No recently saved tracks found.</p>`;
                     document.getElementById('see-all-saved').style.display = 'none';
                     return;
                 }
                 document.getElementById('see-all-saved').style.display = 'inline-flex';
-                recentlySavedPreview.innerHTML = items.slice(0, 10).map(renderPreviewItem).join('');
+                recentlySavedPreview.innerHTML = items.slice(0, previewLimit).map(renderPreviewItem).join('');
+            }
+
+            // --- CAROUSEL LOGIC ---
+            function setupCarousel(carouselId, leftArrowId, rightArrowId) {
+                const carousel = document.getElementById(carouselId);
+                const leftArrow = document.getElementById(leftArrowId);
+                const rightArrow = document.getElementById(rightArrowId);
+
+                if (!carousel || !leftArrow || !rightArrow) return;
+
+                const updateArrowState = () => {
+                    const scrollLeft = carousel.scrollLeft;
+                    const scrollWidth = carousel.scrollWidth;
+                    const clientWidth = carousel.clientWidth;
+
+                    leftArrow.disabled = scrollLeft <= 0;
+                    rightArrow.disabled = scrollLeft + clientWidth >= scrollWidth - 1; // -1 for precision
+                };
+
+                leftArrow.addEventListener('click', () => {
+                    const itemWidth = carousel.firstElementChild?.clientWidth || 200;
+                    carousel.scrollBy({ left: -itemWidth * 3, behavior: 'smooth' });
+                });
+
+                rightArrow.addEventListener('click', () => {
+                     const itemWidth = carousel.firstElementChild?.clientWidth || 200;
+                    carousel.scrollBy({ left: itemWidth * 3, behavior: 'smooth' });
+                });
+
+                carousel.addEventListener('scroll', updateArrowState, { passive: true });
+                
+                // Use a MutationObserver to update arrows when content is loaded
+                const observer = new MutationObserver(() => updateArrowState());
+                observer.observe(carousel, { childList: true });
+
+                updateArrowState(); // Initial check
             }
 
 
@@ -1305,10 +1390,13 @@
                     closeDeepDiveModal();
                 }
             });
+            
+            // Setup carousels after main initialization
+            setupCarousel('recently-played-preview', 'history-arrow-left', 'history-arrow-right');
+            setupCarousel('recently-saved-preview', 'saved-arrow-left', 'saved-arrow-right');
 
             initialize();
         });
     </script>
 </body>
 </html>
-
