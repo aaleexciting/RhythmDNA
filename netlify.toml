@@ -1,0 +1,9 @@
+# File path: /netlify.toml
+
+[build]
+  # For a simple site without a build step (like yours), this is fine.
+  publish = "."
+
+[functions]
+  # This tells Netlify your functions are in the netlify/functions folder.
+  directory = "netlify/functions"

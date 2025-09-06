@@ -143,6 +143,7 @@
             };
 
             // --- SPOTIFY CONFIGURATION ---
+            // The CLIENT_ID is safe to be public for the PKCE flow
             const CLIENT_ID = "b09cf9ddbda34db8976d0b55c232eba7";
             const REDIRECT_URI = window.location.origin + window.location.pathname;
 
@@ -214,21 +215,31 @@
                 }
             }
 
+            // ##### UPDATED FUNCTION #####
+            // This now calls our secure Netlify Function instead of Spotify directly.
             async function getAccessToken(code) {
                 const codeVerifier = localStorage.getItem('code_verifier');
-                // CORRECTED: Removed the explicit Content-Type header
-                const response = await fetch("https://accounts.spotify.com/api/token", {
+                
+                const response = await fetch("/.netlify/functions/exchange-code", {
                     method: 'POST',
-                    body: new URLSearchParams({
-                        client_id: CLIENT_ID,
-                        grant_type: 'authorization_code',
-                        code,
-                        redirect_uri: REDIRECT_URI,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        code: code,
                         code_verifier: codeVerifier,
+                        redirect_uri: REDIRECT_URI
                     }),
                 });
-                if (!response.ok) throw new Error("Failed to fetch Spotify token");
+
+                if (!response.ok) {
+                    const errorBody = await response.json();
+                    console.error("Error from backend token exchange:", errorBody);
+                    throw new Error("Failed to fetch Spotify token from our server.");
+                }
+                
                 const { access_token } = await response.json();
+                if (!access_token) {
+                    throw new Error("Backend did not return an access token.");
+                }
                 return access_token;
             }
 
