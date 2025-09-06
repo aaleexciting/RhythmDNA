@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RhythmDNA Comparison</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+    
+    <style>
+        /* Reusing the beautiful glassmorphism theme */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0f172a;
+            background-image: 
+                radial-gradient(at 27% 37%, hsla(215, 98%, 61%, 0.1) 0px, transparent 50%),
+                radial-gradient(at 97% 21%, hsla(145, 78%, 62%, 0.1) 0px, transparent 50%),
+                radial-gradient(at 75% 88%, hsla(258, 95%, 68%, 0.1) 0px, transparent 50%);
+            color: #e2e8f0;
+        }
+
+        .glass-card {
+            background: rgba(15, 23, 42, 0.6);
+            -webkit-backdrop-filter: blur(20px);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+
+        .btn-primary {
+            background: #1db954; color: #ffffff; font-weight: 700;
+            transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(29, 185, 84, 0.3);
+        }
+        .btn-primary:hover, .btn-primary:focus {
+            background: #1ed760; transform: scale(1.05); box-shadow: 0 6px 20px rgba(29, 185, 84, 0.4);
+        }
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1); color: #ffffff; font-weight: 500;
+            transition: all 0.3s ease; border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        
+        .fade-in { animation: fadeIn 0.8s ease-in-out forwards; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* Custom styles for the similarity score circle */
+        .score-circle {
+            stroke-dasharray: 283; /* 2 * pi * 45 */
+            stroke-dashoffset: 283;
+            transition: stroke-dashoffset 1.5s ease-in-out;
+        }
+    </style>
+</head>
+<body class="min-h-screen p-4 md:p-8">
+
+    <!-- Main Loading State -->
+    <div id="page-loader" class="min-h-screen flex flex-col items-center justify-center">
+        <div class="inline-block h-12 w-12 animate-spin rounded-full border-4 border-solid border-current border-r-transparent text-green-500"></div>
+        <p class="mt-4 text-slate-400">Performing deep analysis...</p>
+    </div>
+    
+    <!-- Error State -->
+    <div id="error-state" class="hidden min-h-screen flex flex-col items-center justify-center text-center">
+        <h1 class="text-4xl font-bold text-red-400 mb-4">Analysis Failed</h1>
+        <p id="error-message" class="text-slate-300 max-w-md mb-8">Could not compare these users. One or both may not have synced their data yet.</p>
+        <a href="index.html" class="btn-primary py-3 px-8 rounded-full">Go Home</a>
+    </div>
+
+    <!-- Main Content (Hidden by default) -->
+    <div id="main-content" class="hidden w-full max-w-7xl mx-auto">
+        
+        <!-- NEW: Header to match other pages -->
+        <header class="flex flex-col md:flex-row justify-between items-center gap-4 mb-12">
+            <a href="index.html" class="flex items-center gap-3 text-2xl font-extrabold text-white">
+                <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-green-400"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+                RhythmDNA
+            </a>
+            <div id="header-actions" class="flex items-center gap-2 w-full md:w-auto">
+                <!-- Header actions will be dynamically rendered here -->
+            </div>
+        </header>
+
+        <!-- Comparison Header -->
+        <div class="text-center mb-12">
+            <div class="flex justify-center items-center gap-4 md:gap-8 mb-6">
+                <a id="user1-link" href="#" class="text-center group">
+                    <img id="user1-img" src="https://placehold.co/128x128/0f172a/FFFFFF?text=..." class="w-24 h-24 md:w-32 md:h-32 rounded-full object-cover border-4 border-slate-600 group-hover:border-green-500 transition-colors shadow-lg mx-auto">
+                    <p id="user1-name" class="font-bold text-lg mt-2 group-hover:text-green-400 transition-colors"></p>
+                </a>
+                <div class="text-4xl font-thin text-slate-400">+</div>
+                <a id="user2-link" href="#" class="text-center group">
+                    <img id="user2-img" src="https://placehold.co/128x128/0f172a/FFFFFF?text=..." class="w-24 h-24 md:w-32 md:h-32 rounded-full object-cover border-4 border-slate-600 group-hover:border-green-500 transition-colors shadow-lg mx-auto">
+                    <p id="user2-name" class="font-bold text-lg mt-2 group-hover:text-green-400 transition-colors"></p>
+                </a>
+            </div>
+            <h1 class="text-4xl md:text-5xl font-extrabold text-white">Music Taste Comparison</h1>
+            <p id="comparison-subtitle" class="text-slate-300 mt-2">Based on a comprehensive analysis of all synced data.</p>
+        </div>
+
+        <!-- Results Section -->
+        <section class="glass-card rounded-2xl p-6 md:p-8 fade-in max-w-4xl mx-auto">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8 items-center">
+                <!-- Overall Score -->
+                <div class="flex flex-col items-center justify-center text-center">
+                    <h2 class="text-2xl font-bold text-white mb-4">Overall Similarity</h2>
+                    <div class="relative w-48 h-48">
+                        <svg class="w-full h-full" viewBox="0 0 100 100">
+                            <!-- Background circle -->
+                            <circle class="text-slate-700" stroke-width="10" cx="50" cy="50" r="45" fill="transparent"></circle>
+                            <!-- Progress circle -->
+                            <circle id="score-circle" class="text-green-400 score-circle" stroke-width="10" cx="50" cy="50" r="45" fill="transparent" stroke-linecap="round" style="transform: rotate(-90deg); transform-origin: 50% 50%;"></circle>
+                        </svg>
+                        <div id="overall-score" class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-5xl font-extrabold text-white">0%</div>
+                    </div>
+                    <p id="score-verdict" class="text-slate-300 mt-4 h-6"></p>
+                </div>
+                
+                <!-- Score Breakdown -->
+                <div class="md:col-span-2 space-y-6">
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="font-bold text-lg text-white">Top Artists Match</span>
+                            <span id="artists-score" class="font-bold text-lg text-green-400">0%</span>
+                        </div>
+                        <div class="w-full bg-slate-700 rounded-full h-3">
+                            <div id="artists-bar" class="bg-green-500 h-3 rounded-full transition-all duration-1000" style="width: 0%;"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="font-bold text-lg text-white">Top Tracks Match</span>
+                            <span id="tracks-score" class="font-bold text-lg text-blue-400">0%</span>
+                        </div>
+                        <div class="w-full bg-slate-700 rounded-full h-3">
+                            <div id="tracks-bar" class="bg-blue-500 h-3 rounded-full transition-all duration-1000" style="width: 0%;"></div>
+                        </div>
+                    </div>
+                     <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="font-bold text-lg text-white">Top Genres Match</span>
+                            <span id="genres-score" class="font-bold text-lg text-purple-400">0%</span>
+                        </div>
+                        <div class="w-full bg-slate-700 rounded-full h-3">
+                            <div id="genres-bar" class="bg-purple-500 h-3 rounded-full transition-all duration-1000" style="width: 0%;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Shared Items Section -->
+        <section class="mt-12">
+            <h2 class="text-3xl font-bold mb-6 text-white text-center">What You Have in Common</h2>
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <!-- Shared Artists -->
+                <div>
+                    <h3 class="text-2xl font-bold mb-4 text-white">Shared Artists</h3>
+                    <div id="shared-artists" class="space-y-4"></div>
+                </div>
+                <!-- Shared Tracks -->
+                <div>
+                    <h3 class="text-2xl font-bold mb-4 text-white">Shared Tracks</h3>
+                    <div id="shared-tracks" class="space-y-4"></div>
+                </div>
+                <!-- Shared Genres -->
+                 <div>
+                    <h3 class="text-2xl font-bold mb-4 text-white">Shared Genres</h3>
+                    <div id="shared-genres" class="flex flex-wrap gap-3">
+                        <!-- Genre tags will be injected here -->
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- CONFIGURATION ---
+            const firebaseConfig = {
+                apiKey: "AIzaSyCvvIIh1Zn3m9Uf9312Qvz4yqLeOX5ksMs",
+                authDomain: "rhythmdna.firebaseapp.com",
+                projectId: "rhythmdna",
+                storageBucket: "rhythmdna.firebasestorage.app",
+                messagingSenderId: "952640078988",
+                appId: "1:952640078988:web:05c133b9890d15cf4d27a9",
+                measurementId: "G-R6SR7H9EWY"
+            };
+
+            // --- INITIALIZE SERVICES ---
+            firebase.initializeApp(firebaseConfig);
+            const db = firebase.firestore();
+            const auth = firebase.auth();
+
+            // --- DOM ELEMENTS ---
+            const pageLoader = document.getElementById('page-loader');
+            const mainContent = document.getElementById('main-content');
+            const errorState = document.getElementById('error-state');
+            const errorMessage = document.getElementById('error-message');
+            const headerActions = document.getElementById('header-actions');
+
+            // --- STATE ---
+            let currentUser = null;
+            let spotifyAccessToken = localStorage.getItem('spotify_access_token');
+
+            // --- UTILITY & API FUNCTIONS ---
+            function logout() {
+                auth.signOut();
+                localStorage.clear();
+                window.location.href = 'index.html';
+            }
+
+            async function fetchSpotifyAPI(endpoint) {
+                if (!spotifyAccessToken) { return null; }
+                const response = await fetch(`https://api.spotify.com/v1/${endpoint}`, {
+                    headers: { 'Authorization': `Bearer ${spotifyAccessToken}` }
+                });
+                if (response.status === 401) { logout(); return null; }
+                if (!response.ok) {
+                    console.error(`API request failed: ${response.statusText}`);
+                    return null;
+                }
+                return response.json();
+            }
+
+            // --- SIMILARITY ALGORITHMS ---
+            function calculateSimilarity(list1, list2) {
+                if (!list1 || !list2 || list1.length === 0 || list2.length === 0) {
+                    return { percentage: 0, sharedItems: [] };
+                }
+
+                const map1 = new Map(list1.map((item, index) => [item.id, index]));
+                let totalScore = 0;
+                const sharedItems = [];
+
+                list2.forEach((item, index2) => {
+                    if (map1.has(item.id)) {
+                        const index1 = map1.get(item.id);
+                        const score = (list1.length - index1) + (list2.length - index2);
+                        totalScore += score;
+                        sharedItems.push({ ...item, rank1: index1 + 1, rank2: index2 + 1 });
+                    }
+                });
+
+                const maxScore1 = list1.reduce((sum, item, index) => sum + ((list1.length - index) * 2), 0);
+                const maxScore2 = list2.reduce((sum, item, index) => sum + ((list2.length - index) * 2), 0);
+                const maxPossibleScore = (maxScore1 + maxScore2) / 2;
+                const percentage = maxPossibleScore > 0 ? (totalScore / maxPossibleScore) * 100 : 0;
+                
+                return { percentage: Math.round(percentage), sharedItems: sharedItems.sort((a,b) => (a.rank1 + a.rank2) - (b.rank1 + b.rank2)) };
+            }
+
+            function calculateGenreSimilarity(artists1, artists2) {
+                const getTopGenres = (artists) => {
+                    const genreCounts = {};
+                    artists.forEach(artist => {
+                        (artist.genres || []).forEach(genre => {
+                            genreCounts[genre] = (genreCounts[genre] || 0) + 1;
+                        });
+                    });
+                    return new Set(Object.entries(genreCounts)
+                        .sort((a, b) => b[1] - a[1])
+                        .slice(0, 30)
+                        .map(([genre]) => genre));
+                };
+
+                const genres1 = getTopGenres(artists1);
+                const genres2 = getTopGenres(artists2);
+
+                if (genres1.size === 0 || genres2.size === 0) {
+                    return { percentage: 0, sharedItems: [] };
+                }
+
+                const intersection = new Set([...genres1].filter(genre => genres2.has(genre)));
+                const union = new Set([...genres1, ...genres2]);
+
+                const percentage = (intersection.size / union.size) * 100;
+                const sharedItems = Array.from(intersection).map(genre => 
+                    genre.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
+                );
+
+                return { percentage: Math.round(percentage), sharedItems: sharedItems.sort() };
+            }
+            
+            // --- RENDER FUNCTIONS ---
+            function renderHeader() {
+                const profileImage = currentUser?.profileImage || `https://placehold.co/40x40/1f2937/FFFFFF?text=?`;
+                const profileLink = currentUser ? `profile.html?user=${currentUser.username}` : '#';
+
+                headerActions.innerHTML = `
+                    <form id="search-form" class="relative flex-grow md:w-64">
+                        <input id="search-input" type="text" placeholder="Find a user..." class="w-full bg-slate-800 border border-slate-700 rounded-full py-2 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-green-500">
+                        <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                    </form>
+                    <a href="discover.html" class="btn-secondary py-2 px-4 rounded-full text-sm flex-shrink-0">Discover</a>
+                    <button id="logout-button" class="btn-secondary py-2 px-4 rounded-full text-sm flex-shrink-0">Logout</button>
+                    <a href="${profileLink}" title="My Profile" class="flex-shrink-0">
+                        <img src="${profileImage}" class="w-9 h-9 rounded-full object-cover border-2 border-slate-600 hover:border-green-500 transition-colors">
+                    </a>
+                `;
+
+                // Re-attach event listeners after re-rendering
+                document.getElementById('search-form').addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    const query = document.getElementById('search-input').value.trim().toLowerCase();
+                    if (query) window.location.href = `profile.html?user=${query}`;
+                });
+                document.getElementById('logout-button').addEventListener('click', logout);
+            }
+
+            function renderResults(user1, user2, artistsComparison, tracksComparison, genresComparison) {
+                // Render user info
+                document.getElementById('user1-img').src = user1.profileImage || `https://placehold.co/128x128/0f172a/FFFFFF?text=${user1.displayName.charAt(0)}`;
+                document.getElementById('user2-img').src = user2.profileImage || `https://placehold.co/128x128/0f172a/FFFFFF?text=${user2.displayName.charAt(0)}`;
+                document.getElementById('user1-name').textContent = `@${user1.username}`;
+                document.getElementById('user2-name').textContent = `@${user2.username}`;
+                document.getElementById('user1-link').href = `profile.html?user=${user1.username}`;
+                document.getElementById('user2-link').href = `profile.html?user=${user2.username}`;
+
+                // Calculate overall score (weighted: 50% artists, 30% tracks, 20% genres)
+                const overallScore = Math.round((artistsComparison.percentage * 0.5) + (tracksComparison.percentage * 0.3) + (genresComparison.percentage * 0.2));
+                
+                // Animate scores after a short delay
+                setTimeout(() => {
+                    const circle = document.getElementById('score-circle');
+                    const circumference = 2 * Math.PI * 45;
+                    const offset = circumference - (overallScore / 100) * circumference;
+                    circle.style.strokeDashoffset = offset;
+                    document.getElementById('overall-score').textContent = `${overallScore}%`;
+
+                    let verdict = "A unique blend!";
+                    if (overallScore > 90) verdict = "Musical Soulmates! 🎶";
+                    else if (overallScore > 75) verdict = "In Perfect Harmony!";
+                    else if (overallScore > 50) verdict = "A Great Vibe!";
+                    else if (overallScore > 25) verdict = "On a Different Wavelength.";
+                    document.getElementById('score-verdict').textContent = verdict;
+
+                    document.getElementById('artists-score').textContent = `${artistsComparison.percentage}%`;
+                    document.getElementById('artists-bar').style.width = `${artistsComparison.percentage}%`;
+                    document.getElementById('tracks-score').textContent = `${tracksComparison.percentage}%`;
+                    document.getElementById('tracks-bar').style.width = `${tracksComparison.percentage}%`;
+                    document.getElementById('genres-score').textContent = `${genresComparison.percentage}%`;
+                    document.getElementById('genres-bar').style.width = `${genresComparison.percentage}%`;
+                }, 500);
+
+                // Render shared artists
+                const sharedArtistsContainer = document.getElementById('shared-artists');
+                if (artistsComparison.sharedItems.length > 0) {
+                    sharedArtistsContainer.innerHTML = artistsComparison.sharedItems.map(artist => `
+                        <div class="glass-card rounded-lg p-3 flex items-center gap-4">
+                            <img src="${artist.images[0]?.url}" class="w-16 h-16 rounded-md object-cover">
+                            <div class="flex-grow overflow-hidden">
+                                <p class="font-bold text-white truncate">${artist.name}</p>
+                                <div class="flex flex-wrap gap-x-4 gap-y-1 text-sm text-slate-400 mt-1">
+                                    <span>${user1.username}'s Rank: <b class="text-white">#${artist.rank1}</b></span>
+                                    <span>${user2.username}'s Rank: <b class="text-white">#${artist.rank2}</b></span>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    sharedArtistsContainer.innerHTML = `<p class="text-slate-400 text-center">No shared top artists.</p>`;
+                }
+
+                // Render shared tracks
+                const sharedTracksContainer = document.getElementById('shared-tracks');
+                if (tracksComparison.sharedItems.length > 0) {
+                    sharedTracksContainer.innerHTML = tracksComparison.sharedItems.map(track => `
+                         <div class="glass-card rounded-lg p-3 flex items-center gap-4">
+                            <img src="${track.album.images[0]?.url}" class="w-16 h-16 rounded-md object-cover">
+                            <div class="flex-grow overflow-hidden">
+                                <p class="font-bold text-white truncate">${track.name}</p>
+                                <p class="text-sm text-slate-300 truncate">${track.artists.map(a => a.name).join(', ')}</p>
+                                <div class="flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-400 mt-1">
+                                    <span>${user1.username}'s Rank: <b class="text-white">#${track.rank1}</b></span>
+                                    <span>${user2.username}'s Rank: <b class="text-white">#${track.rank2}</b></span>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    sharedTracksContainer.innerHTML = `<p class="text-slate-400 text-center">No shared top tracks.</p>`;
+                }
+
+                // Render shared genres
+                const sharedGenresContainer = document.getElementById('shared-genres');
+                if (genresComparison.sharedItems.length > 0) {
+                    sharedGenresContainer.innerHTML = genresComparison.sharedItems.map(genre => `
+                        <span class="bg-slate-700 text-purple-300 text-sm font-medium px-3 py-1 rounded-full">${genre}</span>
+                    `).join('');
+                } else {
+                    sharedGenresContainer.innerHTML = `<p class="text-slate-400 text-center w-full">No shared top genres.</p>`;
+                }
+            }
+
+            // --- INITIALIZATION ---
+            async function initialize() {
+                try {
+                    await auth.signInAnonymously();
+                     // Fetch current user info for the header profile button
+                    if (spotifyAccessToken) {
+                        const spotifyProfile = await fetchSpotifyAPI('me');
+                        if (spotifyProfile) {
+                            const userDoc = await db.collection('users').doc(spotifyProfile.id).get();
+                            if (userDoc.exists) {
+                                currentUser = userDoc.data();
+                            }
+                        }
+                    }
+                    renderHeader();
+
+                    const params = new URLSearchParams(window.location.search);
+                    const username1 = params.get('user1');
+                    const username2 = params.get('user2');
+                    if (!username1 || !username2) throw new Error("Two usernames are required for comparison.");
+
+                    const usersRef = db.collection('users');
+                    
+                    const fetchDataForUser = async (username) => {
+                        const userQuery = await usersRef.where('username', '==', username).limit(1).get();
+                        if (userQuery.empty) throw new Error(`User @${username} not found.`);
+                        const userProfile = userQuery.docs[0].data();
+                        const spotifyId = userProfile.spotifyId;
+
+                        const timeRanges = ['short_term', 'medium_term', 'long_term'];
+                        const artistPromises = timeRanges.map(range => usersRef.doc(spotifyId).collection('top_artists').doc(range).get());
+                        const trackPromises = timeRanges.map(range => usersRef.doc(spotifyId).collection('top_tracks').doc(range).get());
+
+                        const artistDocs = await Promise.all(artistPromises);
+                        const trackDocs = await Promise.all(trackPromises);
+
+                        const allArtists = artistDocs.flatMap(doc => doc.exists ? doc.data().items : []);
+                        const allTracks = trackDocs.flatMap(doc => doc.exists ? doc.data().items : []);
+
+                        if (allArtists.length === 0 || allTracks.length === 0) {
+                            throw new Error(`@${username} has insufficient listening data to compare.`);
+                        }
+
+                        // Deduplicate items to create a master list
+                        const masterArtists = Array.from(new Map(allArtists.map(item => [item.id, item])).values());
+                        const masterTracks = Array.from(new Map(allTracks.map(item => [item.id, item])).values());
+                        
+                        return { profile: userProfile, artists: masterArtists, tracks: masterTracks };
+                    };
+
+                    const [data1, data2] = await Promise.all([fetchDataForUser(username1), fetchDataForUser(username2)]);
+                    
+                    const artistsComparison = calculateSimilarity(data1.artists, data2.artists);
+                    const tracksComparison = calculateSimilarity(data1.tracks, data2.tracks);
+                    const genresComparison = calculateGenreSimilarity(data1.artists, data2.artists);
+
+                    pageLoader.classList.add('hidden');
+                    mainContent.classList.remove('hidden');
+                    renderResults(data1.profile, data2.profile, artistsComparison, tracksComparison, genresComparison);
+
+                } catch (error) {
+                    console.error("Comparison failed:", error);
+                    pageLoader.classList.add('hidden');
+                    errorMessage.textContent = error.message;
+                    errorState.classList.remove('hidden');
+                }
+            }
+
+            initialize();
+        });
+    </script>
+</body>
+</html>

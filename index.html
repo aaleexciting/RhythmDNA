@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RhythmDNA - Discover Your Music Identity</title>
+    
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+    
+    <style>
+        /* Custom styles for the modern glassmorphism UI */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0f172a; /* Fallback color */
+            background-image: 
+                radial-gradient(at 27% 37%, hsla(215, 98%, 61%, 0.1) 0px, transparent 50%),
+                radial-gradient(at 97% 21%, hsla(145, 78%, 62%, 0.1) 0px, transparent 50%),
+                radial-gradient(at 75% 88%, hsla(258, 95%, 68%, 0.1) 0px, transparent 50%);
+            color: #e2e8f0;
+        }
+
+        .glass-card {
+            background: rgba(15, 23, 42, 0.6); /* Darker, less transparent background */
+            -webkit-backdrop-filter: blur(20px);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+
+        .btn-primary {
+            background: #1db954;
+            color: #ffffff;
+            font-weight: 700;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(29, 185, 84, 0.3);
+        }
+
+        .btn-primary:hover, .btn-primary:focus {
+            background: #1ed760;
+            transform: scale(1.05);
+            box-shadow: 0 6px 20px rgba(29, 185, 84, 0.4);
+        }
+        
+        .btn-primary:disabled {
+            background: #1db954;
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: scale(1);
+            box-shadow: none;
+        }
+
+        .fade-in {
+            animation: fadeIn 0.8s ease-in-out forwards;
+        }
+        
+        .fade-out {
+            animation: fadeOut 0.5s ease-in-out forwards;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes fadeOut {
+            from { opacity: 1; transform: translateY(0); }
+            to { opacity: 0; transform: translateY(-20px); }
+        }
+        
+        /* Custom focus styles for inputs */
+        .form-input:focus {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(29, 185, 84, 0.5);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+
+    <main id="app-container" class="w-full max-w-md mx-auto">
+        
+        <!-- Loading State: Shown on initial page load -->
+        <div id="loading-state" class="text-center">
+            <div class="inline-block h-10 w-10 animate-spin rounded-full border-4 border-solid border-current border-r-transparent align-[-0.125em] text-green-500 motion-reduce:animate-[spin_1.5s_linear_infinite]" role="status"></div>
+            <p class="mt-4 text-slate-400">Connecting...</p>
+        </div>
+
+        <!-- Login State: The main entry point -->
+        <div id="login-state" class="hidden">
+            <div class="glass-card rounded-2xl p-8 md:p-10 text-center fade-in">
+                <div class="flex justify-center items-center gap-3 mb-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-green-400"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+                    <h1 class="text-4xl font-extrabold text-white">RhythmDNA</h1>
+                </div>
+                <p class="text-slate-300 mb-8">Discover your music identity. Compare your taste with friends and the world.</p>
+                <button id="login-button" class="btn-primary w-full py-3 px-8 rounded-full text-lg">
+                    Login with Spotify
+                </button>
+            </div>
+        </div>
+
+        <!-- Onboarding State: For new users -->
+        <div id="onboarding-state" class="hidden">
+            <div class="glass-card rounded-2xl p-8 md:p-10 text-center fade-in">
+                <h1 class="text-3xl font-bold mb-2 text-white">Welcome!</h1>
+                <p class="text-slate-300 mb-6">Let's create your public profile. Pick a unique username to share your music taste.</p>
+                <form id="onboarding-form">
+                    <div class="relative">
+                        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">rhythmdna.app/</span>
+                        <input id="username-input" type="text" placeholder="your-username" class="form-input w-full bg-slate-800 text-white pl-[135px] pr-3 py-3 rounded-lg mb-2 border border-slate-600 transition" required minlength="3" maxlength="20" pattern="[a-zA-Z0-9-]+" title="Only letters, numbers, and hyphens are allowed.">
+                    </div>
+                    <p id="username-error" class="text-red-400 text-sm mb-4 h-5 text-left"></p>
+                    <button type="submit" id="onboarding-submit" class="btn-primary w-full py-3 rounded-lg">
+                        Create Profile & Enter
+                    </button>
+                </form>
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- FIREBASE CONFIGURATION ---
+            const firebaseConfig = {
+                apiKey: "AIzaSyCvvIIh1Zn3m9Uf9312Qvz4yqLeOX5ksMs",
+                authDomain: "rhythmdna.firebaseapp.com",
+                projectId: "rhythmdna",
+                storageBucket: "rhythmdna.firebasestorage.app",
+                messagingSenderId: "952640078988",
+                appId: "1:952640078988:web:05c133b9890d15cf4d27a9",
+                measurementId: "G-R6SR7H9EWY"
+            };
+
+            // --- SPOTIFY CONFIGURATION ---
+            const CLIENT_ID = "b09cf9ddbda34db8976d0b55c232eba7";
+            const REDIRECT_URI = window.location.origin + window.location.pathname;
+
+            // --- INITIALIZE SERVICES ---
+            firebase.initializeApp(firebaseConfig);
+            const auth = firebase.auth();
+            const db = firebase.firestore();
+
+            // --- DOM ELEMENTS ---
+            const loadingState = document.getElementById('loading-state');
+            const loginState = document.getElementById('login-state');
+            const onboardingState = document.getElementById('onboarding-state');
+            const loginButton = document.getElementById('login-button');
+            const onboardingForm = document.getElementById('onboarding-form');
+            const usernameInput = document.getElementById('username-input');
+            const usernameError = document.getElementById('username-error');
+            const onboardingSubmitBtn = document.getElementById('onboarding-submit');
+
+            // --- UI STATE MANAGEMENT ---
+            function showState(state) {
+                loadingState.classList.add('hidden');
+                loginState.classList.add('hidden');
+                onboardingState.classList.add('hidden');
+                
+                if (state === 'loading') loadingState.classList.remove('hidden');
+                if (state === 'login') loginState.classList.remove('hidden');
+                if (state === 'onboarding') onboardingState.classList.remove('hidden');
+            }
+
+            // --- PKCE HELPER FUNCTIONS ---
+            function generateRandomString(length) {
+                const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+                let text = '';
+                for (let i = 0; i < length; i++) {
+                    text += possible.charAt(Math.floor(Math.random() * possible.length));
+                }
+                return text;
+            }
+
+            async function generateCodeChallenge(codeVerifier) {
+                const data = new TextEncoder().encode(codeVerifier);
+                const digest = await window.crypto.subtle.digest('SHA-256', data);
+                return btoa(String.fromCharCode.apply(null, new Uint8Array(digest)))
+                    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+            }
+
+            // --- AUTHENTICATION FLOW ---
+            async function redirectToSpotifyLogin() {
+                try {
+                    const codeVerifier = generateRandomString(128);
+                    const codeChallenge = await generateCodeChallenge(codeVerifier);
+                    localStorage.setItem('code_verifier', codeVerifier);
+                    
+                    const scopes = 'user-top-read user-read-private user-library-read user-read-recently-played';
+                    const authUrl = new URL("https://accounts.spotify.com/authorize");
+                    authUrl.search = new URLSearchParams({
+                        response_type: 'code',
+                        client_id: CLIENT_ID,
+                        scope: scopes,
+                        redirect_uri: REDIRECT_URI,
+                        code_challenge_method: 'S256',
+                        code_challenge: codeChallenge,
+                        show_dialog: 'true'
+                    }).toString();
+                    window.location.href = authUrl.toString();
+                } catch (error) {
+                    console.error("Error during Spotify redirect:", error);
+                    alert("Could not redirect to Spotify. Please check the console for errors.");
+                }
+            }
+
+            async function getAccessToken(code) {
+                const codeVerifier = localStorage.getItem('code_verifier');
+                // CORRECTED: Removed the explicit Content-Type header
+                const response = await fetch("https://accounts.spotify.com/api/token", {
+                    method: 'POST',
+                    body: new URLSearchParams({
+                        client_id: CLIENT_ID,
+                        grant_type: 'authorization_code',
+                        code,
+                        redirect_uri: REDIRECT_URI,
+                        code_verifier: codeVerifier,
+                    }),
+                });
+                if (!response.ok) throw new Error("Failed to fetch Spotify token");
+                const { access_token } = await response.json();
+                return access_token;
+            }
+
+            async function fetchSpotifyAPI(endpoint, token) {
+                const response = await fetch(`https://api.spotify.com/v1/${endpoint}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (!response.ok) {
+                    let errorDetails = `Spotify API request failed: Status ${response.status}`;
+                    try {
+                        const errorBody = await response.json();
+                        if (errorBody.error && errorBody.error.message) {
+                            errorDetails += ` - Reason: ${errorBody.error.message}`;
+                        }
+                    } catch (e) {
+                        // Response body was not JSON, just use the status
+                    }
+                    throw new Error(errorDetails);
+                }
+                return response.json();
+            }
+
+            // --- ONBOARDING LOGIC ---
+            async function handleOnboarding(spotifyProfile) {
+                showState('onboarding');
+                onboardingForm.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    onboardingSubmitBtn.disabled = true;
+                    onboardingSubmitBtn.textContent = 'Creating...';
+                    
+                    const username = usernameInput.value.trim().toLowerCase();
+                    usernameError.textContent = "";
+
+                    if (!/^[a-zA-Z0-9-]+$/.test(username)) {
+                        usernameError.textContent = "Only letters, numbers, and hyphens are allowed.";
+                        onboardingSubmitBtn.disabled = false;
+                        onboardingSubmitBtn.textContent = 'Create Profile & Enter';
+                        return;
+                    }
+
+                    const usersRef = db.collection('users');
+                    const usernameQuery = await usersRef.where('username', '==', username).get();
+                    
+                    if (!usernameQuery.empty) {
+                        usernameError.textContent = "This username is already taken. Try another!";
+                        onboardingSubmitBtn.disabled = false;
+                        onboardingSubmitBtn.textContent = 'Create Profile & Enter';
+                        return;
+                    }
+                    
+                    const userDoc = {
+                        username: username,
+                        spotifyId: spotifyProfile.id,
+                        displayName: spotifyProfile.display_name,
+                        profileImage: spotifyProfile.images?.[0]?.url || null,
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                    };
+                    
+                    await db.collection('users').doc(spotifyProfile.id).set(userDoc);
+
+                    window.location.href = `profile.html?user=${username}`;
+                });
+            }
+
+            // --- INITIALIZATION LOGIC ---
+            async function initialize() {
+                const params = new URLSearchParams(window.location.search);
+                const code = params.get('code');
+
+                if (code) {
+                    try {
+                        const accessToken = await getAccessToken(code);
+                        localStorage.setItem('spotify_access_token', accessToken);
+                        
+                        const url = new URL(window.location.href);
+                        url.search = '';
+                        history.pushState({}, '', url);
+                    } catch (error) {
+                        console.error("Error getting Spotify token:", error);
+                        showState('login');
+                        return;
+                    }
+                }
+                
+                const accessToken = localStorage.getItem('spotify_access_token');
+
+                if (!accessToken) {
+                    showState('login');
+                    return;
+                }
+
+                try {
+                    await auth.signInAnonymously();
+                    const spotifyProfile = await fetchSpotifyAPI('me', accessToken);
+                    if (!spotifyProfile || !spotifyProfile.id) {
+                        throw new Error("Could not fetch Spotify profile.");
+                    }
+
+                    const userDocRef = db.collection('users').doc(spotifyProfile.id);
+                    const docSnap = await userDocRef.get();
+
+                    if (docSnap.exists) {
+                        const userData = docSnap.data();
+                        window.location.href = `profile.html?user=${userData.username}`;
+                    } else {
+                        await handleOnboarding(spotifyProfile);
+                    }
+                } catch (error) {
+                    console.error("Initialization failed:", error);
+                    localStorage.removeItem('spotify_access_token');
+                    showState('login');
+                }
+            }
+
+            // --- EVENT LISTENERS ---
+            loginButton.addEventListener('click', redirectToSpotifyLogin);
+
+            // --- START THE APP ---
+            initialize();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RhythmDNA Profile</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Chart.js for Genre Chart -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+    
+    <style>
+        /* Reusing the beautiful glassmorphism theme */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0f172a;
+            background-image: 
+                radial-gradient(at 27% 37%, hsla(215, 98%, 61%, 0.1) 0px, transparent 50%),
+                radial-gradient(at 97% 21%, hsla(145, 78%, 62%, 0.1) 0px, transparent 50%),
+                radial-gradient(at 75% 88%, hsla(258, 95%, 68%, 0.1) 0px, transparent 50%);
+            color: #e2e8f0;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        #main-content {
+            flex-grow: 1;
+        }
+
+        .glass-card {
+            background: rgba(15, 23, 42, 0.6);
+            -webkit-backdrop-filter: blur(20px);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            transition: all 0.3s ease;
+        }
+        
+        .glass-card:hover:not(.no-hover) {
+            border-color: rgba(255, 255, 255, 0.2);
+            transform: translateY(-5px);
+        }
+
+        .btn-primary {
+            background: #1db954; color: #ffffff; font-weight: 700;
+            transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(29, 185, 84, 0.3);
+        }
+        .btn-primary:hover, .btn-primary:focus {
+            background: #1ed760; transform: scale(1.05); box-shadow: 0 6px 20px rgba(29, 185, 84, 0.4);
+        }
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1); color: #ffffff; font-weight: 500;
+            transition: all 0.3s ease; border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .btn-secondary.active, .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        
+        .fade-in { animation: fadeIn 0.8s ease-in-out forwards; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.2); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb { background: #1db954; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #1ed760; }
+        
+        /* Modal Styles */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+            display: flex; align-items: center; justify-content: center;
+            z-index: 50; opacity: 0; transition: opacity 0.3s ease; pointer-events: none;
+        }
+        .modal-overlay.active { opacity: 1; pointer-events: auto; }
+        .modal-content {
+            transform: scale(0.95); transition: transform 0.3s ease;
+        }
+        .modal-overlay.active .modal-content { transform: scale(1); }
+
+        .list-fade::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 120px;
+            background: linear-gradient(to bottom, transparent, #0f172a 90%);
+            pointer-events: none;
+            transition: opacity 0.3s ease-in-out;
+        }
+        .list-fade.expanded::after {
+            opacity: 0;
+        }
+
+        /* --- Like Button Styles --- */
+        .like-button {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+        }
+        .like-button:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: scale(1.05);
+        }
+        .like-button .heart-icon {
+            fill: none;
+            stroke: #e2e8f0;
+            transition: all 0.3s ease;
+        }
+        .like-button.liked {
+            background: rgba(236, 72, 153, 0.2);
+            border-color: rgba(236, 72, 153, 0.5);
+            box-shadow: 0 0 15px rgba(236, 72, 153, 0.3);
+        }
+        .like-button.liked .heart-icon {
+            fill: #ec4899;
+            stroke: #ec4899;
+        }
+        .like-button.liked:hover {
+             background: rgba(236, 72, 153, 0.3);
+        }
+        
+        .like-button.animating {
+            animation: pop 0.4s ease-out;
+        }
+        @keyframes pop {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <!-- Main Loading State -->
+    <div id="page-loader" class="min-h-screen flex flex-col items-center justify-center">
+        <div class="inline-block h-12 w-12 animate-spin rounded-full border-4 border-solid border-current border-r-transparent text-green-500"></div>
+        <p class="mt-4 text-slate-400">Loading Profile...</p>
+    </div>
+    
+    <!-- Error State -->
+    <div id="error-state" class="hidden min-h-screen flex flex-col items-center justify-center text-center">
+        <h1 class="text-4xl font-bold text-red-400 mb-4">Oops!</h1>
+        <p id="error-message" class="text-slate-300 max-w-md mb-8">Could not find a user with that name. Make sure the username is correct.</p>
+        <a href="index.html" class="btn-primary py-3 px-8 rounded-full">Go Home</a>
+    </div>
+
+    <!-- Main Content (Hidden by default) -->
+    <div id="main-content" class="hidden w-full max-w-7xl mx-auto">
+        
+        <header class="flex flex-col md:flex-row justify-between items-center gap-4 mb-8">
+            <a href="index.html" class="flex items-center gap-3 text-2xl font-extrabold text-white">
+                <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-green-400"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+                RhythmDNA
+            </a>
+            <div id="header-actions" class="flex items-center gap-2 w-full md:w-auto">
+                <!-- Header actions will be dynamically rendered here -->
+            </div>
+        </header>
+
+        <!-- Profile Header -->
+        <section id="profile-header" class="glass-card no-hover rounded-2xl p-6 md:p-8 mb-8 flex flex-col md:flex-row items-center gap-6 fade-in"></section>
+
+        <!-- Time Range Selector -->
+        <div class="flex justify-center gap-2 md:gap-4 mb-8 fade-in" style="animation-delay: 0.2s;">
+            <button class="btn-secondary py-2 px-4 rounded-lg active" data-range="short_term">Last 4 Weeks</button>
+            <button class="btn-secondary py-2 px-4 rounded-lg" data-range="medium_term">Last 6 Months</button>
+            <button class="btn-secondary py-2 px-4 rounded-lg" data-range="long_term">All Time</button>
+        </div>
+        
+        <!-- Stats Loading Spinner -->
+        <div id="stats-loader" class="text-center my-16">
+            <div class="inline-block h-10 w-10 animate-spin rounded-full border-4 border-solid border-current border-r-transparent text-green-500"></div>
+        </div>
+
+        <!-- Data Display Sections -->
+        <div id="stats-container" class="hidden space-y-12">
+            <!-- Top Genres -->
+            <section class="fade-in" style="animation-delay: 0.4s;">
+                <h2 class="text-3xl font-bold mb-6 text-white">Top Genres</h2>
+                <div class="glass-card no-hover rounded-xl p-4 md:p-6">
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-center">
+                        <div class="relative h-64 md:h-80"><canvas id="genre-chart"></canvas></div>
+                        <div id="genre-list" class="space-y-3"></div>
+                    </div>
+                </div>
+            </section>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
+                <!-- Top Artists -->
+                <section class="fade-in" style="animation-delay: 0.6s;">
+                    <h2 class="text-3xl font-bold mb-6 text-white">Top Artists</h2>
+                    <div id="top-artists-container" class="relative">
+                         <div id="top-artists" class="grid grid-cols-2 sm:grid-cols-3 gap-4 md:gap-6"></div>
+                    </div>
+                    <div id="artists-toggle-container" class="text-center mt-8"></div>
+                </section>
+                <!-- Top Tracks -->
+                <section class="fade-in" style="animation-delay: 0.8s;">
+                    <h2 class="text-3xl font-bold mb-6 text-white">Top Tracks</h2>
+                    <div id="top-tracks-container" class="relative">
+                        <div id="top-tracks" class="grid grid-cols-1 gap-4"></div>
+                    </div>
+                    <div id="tracks-toggle-container" class="text-center mt-8"></div>
+                </section>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Profile Modal -->
+    <div id="edit-profile-modal" class="modal-overlay">
+        <div class="modal-content glass-card rounded-2xl p-8 w-full max-w-md">
+            <h2 class="text-2xl font-bold text-white mb-6">Edit Profile</h2>
+            <form id="edit-profile-form">
+                <div class="mb-4">
+                    <label for="display-name-input" class="block text-sm font-medium text-slate-300 mb-2">Display Name</label>
+                    <input type="text" id="display-name-input" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-green-500" required>
+                </div>
+                <div class="mb-4">
+                    <label for="spotify-url-input" class="block text-sm font-medium text-slate-300 mb-2">Spotify Profile URL</label>
+                    <input type="url" id="spotify-url-input" placeholder="https://open.spotify.com/user/..." class="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-green-500">
+                </div>
+                <div class="mb-4">
+                    <label for="instagram-url-input" class="block text-sm font-medium text-slate-300 mb-2">Instagram Profile URL</label>
+                    <input type="url" id="instagram-url-input" placeholder="https://www.instagram.com/..." class="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-green-500">
+                </div>
+                <div class="mb-6">
+                    <label for="discord-url-input" class="block text-sm font-medium text-slate-300 mb-2">Discord Profile/Server URL</label>
+                    <input type="url" id="discord-url-input" placeholder="https://discord.gg/..." class="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-green-500">
+                </div>
+                <div class="flex gap-4">
+                    <button type="button" id="cancel-edit-button" class="btn-secondary w-full py-3 rounded-lg">Cancel</button>
+                    <button type="submit" id="save-edit-button" class="btn-primary w-full py-3 rounded-lg">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <footer id="app-footer" class="w-full max-w-7xl mx-auto mt-24 pt-8 border-t border-slate-800 opacity-0 fade-in" style="animation-delay: 1s;">
+        <div class="flex flex-col md:flex-row justify-between items-center gap-8">
+            <div class="text-center md:text-left">
+                <a href="index.html" class="flex items-center justify-center md:justify-start gap-3 text-xl font-extrabold text-white mb-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-green-400"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+                    RhythmDNA
+                </a>
+                <p class="text-sm text-slate-400">Discover your music identity.</p>
+            </div>
+            <div class="flex gap-6 text-sm font-medium text-slate-300">
+                <a href="#" class="hover:text-green-400 transition-colors">Contact</a>
+                <a href="#" class="hover:text-green-400 transition-colors">Privacy Policy</a>
+                <a href="#" class="hover:text-green-400 transition-colors">Terms</a>
+            </div>
+        </div>
+        <div class="mt-8 pt-8 border-t border-slate-800 flex flex-col sm:flex-row justify-between items-center gap-4">
+            <p id="copyright" class="text-sm text-slate-500">&copy; 2024 RhythmDNA. All Rights Reserved.</p>
+            <p class="text-sm text-slate-500">Not affiliated with Spotify AB.</p>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- CONFIGURATION ---
+            const firebaseConfig = {
+                apiKey: "AIzaSyCvvIIh1Zn3m9Uf9312Qvz4yqLeOX5ksMs",
+                authDomain: "rhythmdna.firebaseapp.com",
+                projectId: "rhythmdna",
+                storageBucket: "rhythmdna.firebasestorage.app",
+                messagingSenderId: "952640078988",
+                appId: "1:952640078988:web:05c133b9890d15cf4d27a9",
+                measurementId: "G-R6SR7H9EWY"
+            };
+
+            // --- INITIALIZE SERVICES ---
+            firebase.initializeApp(firebaseConfig);
+            const auth = firebase.auth();
+            const db = firebase.firestore();
+
+            // --- DOM ELEMENTS ---
+            const pageLoader = document.getElementById('page-loader');
+            const mainContent = document.getElementById('main-content');
+            const appFooter = document.getElementById('app-footer');
+            const errorState = document.getElementById('error-state');
+            const errorMessage = document.getElementById('error-message');
+            const headerActions = document.getElementById('header-actions');
+            const timeRangeSelector = document.querySelector('.flex.justify-center.gap-2');
+            const statsLoader = document.getElementById('stats-loader');
+            const statsContainer = document.getElementById('stats-container');
+            const editProfileModal = document.getElementById('edit-profile-modal');
+            const topArtistsContainer = document.getElementById('top-artists-container');
+            const topTracksContainer = document.getElementById('top-tracks-container');
+
+            // --- STATE ---
+            let spotifyAccessToken = localStorage.getItem('spotify_access_token');
+            let viewedUser = null; 
+            let currentUser = null; 
+            let hasLikedProfile = false;
+            let activeTimeRange = 'short_term';
+            let genreChart = null;
+            let allTopArtists = [];
+            let allTopTracks = [];
+            let artistExpansionLevel = 0;
+            let trackExpansionLevel = 0;
+            const artistExpansionLimits = [15, 30, 50];
+            const trackExpansionLimits = [14, 28, 50];
+            let profileListener = null; // To hold the real-time listener
+
+            // --- UTILITY & API FUNCTIONS ---
+            function logout() {
+                auth.signOut();
+                localStorage.clear();
+                window.location.href = 'index.html';
+            }
+
+            async function fetchSpotifyAPI(endpoint) {
+                if (!spotifyAccessToken) { logout(); return; }
+                const response = await fetch(`https://api.spotify.com/v1/${endpoint}`, {
+                    headers: { 'Authorization': `Bearer ${spotifyAccessToken}` }
+                });
+                if (response.status === 401) { logout(); return; }
+                if (!response.ok) throw new Error(`API request failed: ${response.statusText}`);
+                return response.json();
+            }
+
+            // --- MODAL FUNCTIONS ---
+            function openModal(modal) { modal.classList.add('active'); }
+            function closeModal(modal) { modal.classList.remove('active'); }
+
+            // --- RENDERING FUNCTIONS ---
+            function renderHeader() {
+                const profileImage = currentUser?.profileImage || `https://placehold.co/40x40/1f2937/FFFFFF?text=?`;
+                const profileLink = currentUser ? `profile.html?user=${currentUser.username}` : '#';
+
+                headerActions.innerHTML = `
+                    <form id="search-form" class="relative flex-grow md:w-64">
+                        <input id="search-input" type="text" placeholder="Find a user..." class="w-full bg-slate-800 border border-slate-700 rounded-full py-2 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-green-500">
+                        <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                    </form>
+                    <a href="discover.html" class="btn-secondary py-2 px-4 rounded-full text-sm flex-shrink-0">Discover</a>
+                    <button id="logout-button" class="btn-secondary py-2 px-4 rounded-full text-sm flex-shrink-0">Logout</button>
+                    <a href="${profileLink}" title="My Profile" class="flex-shrink-0">
+                        <img src="${profileImage}" class="w-9 h-9 rounded-full object-cover border-2 border-slate-600 hover:border-green-500 transition-colors">
+                    </a>
+                `;
+
+                document.getElementById('search-form').addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    const query = document.getElementById('search-input').value.trim().toLowerCase();
+                    if (query) window.location.href = `profile.html?user=${query}`;
+                });
+                document.getElementById('logout-button').addEventListener('click', logout);
+            }
+
+            function renderProfileHeader() {
+                const isOwnProfile = currentUser && viewedUser && currentUser.username === viewedUser.username;
+                const profileHeader = document.getElementById('profile-header');
+                const profileImage = viewedUser.profileImage || `https://placehold.co/128x128/0f172a/FFFFFF?text=${viewedUser.displayName.charAt(0)}`;
+                
+                const verifiedBadge = viewedUser.isVerified ? 
+                    `<img src="verified.png" alt="Verified" class="w-6 h-6 ml-2" title="Verified User">` : '';
+
+                let likeButtonHtml = '';
+                if (currentUser && !isOwnProfile) {
+                    likeButtonHtml = `
+                        <button id="like-profile-button" class="like-button flex items-center gap-2 py-2 px-4 rounded-full ${hasLikedProfile ? 'liked' : ''}">
+                            <svg class="w-5 h-5 heart-icon" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+                            </svg>
+                            <span id="like-count" class="font-semibold text-sm">${viewedUser.likes || 0}</span>
+                        </button>
+                    `;
+                } else {
+                     likeButtonHtml = `
+                        <div class="flex items-center gap-2 py-2 px-4 rounded-full bg-slate-800 border border-slate-700">
+                             <svg class="w-5 h-5 text-pink-400" fill="currentColor" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+                             <span id="like-count" class="font-semibold text-sm">${viewedUser.likes || 0}</span>
+                        </div>
+                    `;
+                }
+
+                let actionButtonHtml = '';
+                if (isOwnProfile) {
+                    actionButtonHtml = `
+                        <button id="edit-profile-button" class="btn-secondary py-2 px-5 rounded-full">Edit Profile</button>
+                        <button id="sync-button" class="btn-primary py-2 px-5 rounded-full">Sync My Stats</button>
+                    `;
+                } else if (currentUser) {
+                    actionButtonHtml = `<a href="compare.html?user1=${currentUser.username}&user2=${viewedUser.username}" class="btn-primary py-2 px-5 rounded-full">Compare Your Taste</a>`;
+                }
+
+                const socials = viewedUser.socials || {};
+                const socialLinksHtml = `
+                    <div class="flex justify-center md:justify-start gap-4 mt-2">
+                        ${socials.spotify ? `<a href="${socials.spotify}" target="_blank" title="Spotify" class="transition-opacity hover:opacity-80"><img src="spotify.png" alt="Spotify" class="w-6 h-6"></a>` : ''}
+                        ${socials.instagram ? `<a href="${socials.instagram}" target="_blank" title="Instagram" class="transition-opacity hover:opacity-80"><img src="instagram.png" alt="Instagram" class="w-6 h-6"></a>` : ''}
+                        ${socials.discord ? `<a href="${socials.discord}" target="_blank" title="Discord" class="transition-opacity hover:opacity-80"><img src="discord.png" alt="Discord" class="w-6 h-6"></a>` : ''}
+                    </div>
+                `;
+
+                profileHeader.innerHTML = `
+                    <img src="${profileImage}" alt="${viewedUser.displayName}" class="w-24 h-24 md:w-32 md:h-32 rounded-full object-cover border-4 border-green-500 shadow-lg">
+                    <div class="flex-grow text-center md:text-left">
+                        <div class="flex items-center justify-center md:justify-start">
+                           <h1 class="text-3xl md:text-4xl font-extrabold text-white">${viewedUser.displayName}</h1>
+                           ${verifiedBadge}
+                        </div>
+                        <p class="text-slate-400">@${viewedUser.username}</p>
+                        ${socialLinksHtml}
+                    </div>
+                    <div class="flex-shrink-0 flex flex-col sm:flex-row items-center gap-4">
+                        ${likeButtonHtml}
+                        ${actionButtonHtml}
+                    </div>
+                `;
+                
+                if (isOwnProfile) {
+                    document.getElementById('sync-button').addEventListener('click', syncSpotifyData);
+                    document.getElementById('edit-profile-button').addEventListener('click', () => {
+                        document.getElementById('display-name-input').value = viewedUser.displayName;
+                        document.getElementById('spotify-url-input').value = viewedUser.socials?.spotify || '';
+                        document.getElementById('instagram-url-input').value = viewedUser.socials?.instagram || '';
+                        document.getElementById('discord-url-input').value = viewedUser.socials?.discord || '';
+                        openModal(editProfileModal);
+                    });
+                } else if(currentUser) {
+                    document.getElementById('like-profile-button').addEventListener('click', handleLike);
+                }
+            }
+            
+            function renderArtists() {
+                const limit = artistExpansionLimits[artistExpansionLevel];
+                const artistsToDisplay = allTopArtists.slice(0, limit);
+                document.getElementById('top-artists').innerHTML = artistsToDisplay.map((artist, index) => `
+                    <a href="${artist.external_urls.spotify}" target="_blank" class="glass-card rounded-lg p-4 text-center block group">
+                        <img src="${artist.images[0]?.url}" alt="${artist.name}" class="w-full aspect-square rounded-full object-cover mb-4 mx-auto shadow-lg transition-transform duration-300 group-hover:scale-105">
+                        <p class="font-bold truncate text-white">${index + 1}. ${artist.name}</p>
+                    </a>
+                `).join('');
+
+                const showFade = artistExpansionLevel < 2 && allTopArtists.length > limit;
+                topArtistsContainer.classList.toggle('list-fade', showFade);
+                topArtistsContainer.classList.toggle('expanded', !showFade);
+            }
+
+            function renderTracks() {
+                const limit = trackExpansionLimits[trackExpansionLevel];
+                const tracksToDisplay = allTopTracks.slice(0, limit);
+                document.getElementById('top-tracks').innerHTML = tracksToDisplay.map((track, index) => `
+                    <a href="${track.external_urls.spotify}" target="_blank" class="glass-card rounded-lg p-3 flex items-center gap-4 group">
+                        <span class="text-lg font-bold text-slate-400 w-6 text-center">${index + 1}</span>
+                        <img src="${track.album.images[0]?.url}" alt="${track.name}" class="w-12 h-12 rounded-md object-cover shadow-md">
+                        <div class="flex-1 overflow-hidden">
+                            <p class="font-bold truncate text-white group-hover:text-green-400 transition-colors">${track.name}</p>
+                            <p class="text-sm truncate text-slate-300">${track.artists.map(a => a.name).join(', ')}</p>
+                        </div>
+                    </a>
+                `).join('');
+
+                const showFade = trackExpansionLevel < 2 && allTopTracks.length > limit;
+                topTracksContainer.classList.toggle('list-fade', showFade);
+                topTracksContainer.classList.toggle('expanded', !showFade);
+            }
+
+            function renderToggleButton(type) {
+                const isArtist = type === 'artists';
+                const container = document.getElementById(isArtist ? 'artists-toggle-container' : 'tracks-toggle-container');
+                const expansionLevel = isArtist ? artistExpansionLevel : trackExpansionLevel;
+                const totalItems = isArtist ? allTopArtists.length : allTopTracks.length;
+                const limits = isArtist ? artistExpansionLimits : trackExpansionLimits;
+
+                if (totalItems <= limits[0]) {
+                    container.innerHTML = '';
+                    return;
+                }
+
+                let buttonText = 'Show More';
+                if (expansionLevel === 1) buttonText = 'Show All';
+                if (expansionLevel === 2) buttonText = 'Show Less';
+                
+                container.innerHTML = `<button data-type="${type}" class="toggle-btn btn-secondary py-2 px-6 rounded-lg">${buttonText}</button>`;
+            }
+            
+            function renderGenres(artists) {
+                const genreCounts = {};
+                artists.forEach(artist => artist.genres.forEach(genre => {
+                    genreCounts[genre] = (genreCounts[genre] || 0) + 1;
+                }));
+                const genres = Object.entries(genreCounts).sort((a, b) => b[1] - a[1]).slice(0, 10);
+
+                const chartColors = ['#1DB954', '#00CFE8', '#5E60CE', '#E83E8C', '#FD7E14', '#FFC107', '#20C997', '#4895EF', '#F06292', '#6f42c1'];
+                const total = genres.reduce((sum, [, count]) => sum + count, 0);
+
+                document.getElementById('genre-list').innerHTML = genres.map(([genre, count], index) => {
+                    const percentage = total > 0 ? ((count / total) * 100).toFixed(1) : 0;
+                    const capitalizedGenre = genre.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+                    return `
+                        <div>
+                            <div class="flex justify-between items-center mb-1">
+                                <span class="text-sm font-medium text-slate-200">${index + 1}. ${capitalizedGenre}</span>
+                                <span class="text-sm font-medium text-slate-400">${percentage}%</span>
+                            </div>
+                            <div class="w-full bg-slate-700 rounded-full h-2"><div class="h-2 rounded-full" style="width: ${percentage}%; background-color: ${chartColors[index % chartColors.length]};"></div></div>
+                        </div>`;
+                }).join('');
+
+                const ctx = document.getElementById('genre-chart').getContext('2d');
+                if (genreChart) genreChart.destroy();
+                genreChart = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: genres.map(([genre]) => genre.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')),
+                        datasets: [{ data: genres.map(([, count]) => count), backgroundColor: chartColors, borderWidth: 0, hoverOffset: 10 }]
+                    },
+                    options: {
+                        responsive: true, maintainAspectRatio: false,
+                        plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => `${c.label}: ${((c.raw / total) * 100).toFixed(1)}%` } } },
+                        cutout: '60%'
+                    }
+                });
+            }
+
+            // --- DATA FETCHING & SYNCING ---
+            async function syncSpotifyData() {
+                const syncButton = document.getElementById('sync-button');
+                syncButton.disabled = true;
+                syncButton.textContent = 'Syncing...';
+                
+                statsContainer.classList.add('hidden');
+                statsLoader.classList.remove('hidden');
+                
+                try {
+                    const timeRanges = ['short_term', 'medium_term', 'long_term'];
+                    for (const range of timeRanges) {
+                        const [artistsData, tracksData] = await Promise.all([
+                            fetchSpotifyAPI(`me/top/artists?time_range=${range}&limit=50`),
+                            fetchSpotifyAPI(`me/top/tracks?time_range=${range}&limit=50`)
+                        ]);
+                        
+                        const userDocRef = db.collection('users').doc(viewedUser.spotifyId);
+                        await userDocRef.collection('top_artists').doc(range).set({ items: artistsData.items });
+                        await userDocRef.collection('top_tracks').doc(range).set({ items: tracksData.items });
+                    }
+                    
+                    await loadStatsForTimeRange(activeTimeRange);
+                    alert('Sync complete!');
+                } catch (error) {
+                    console.error("Error syncing Spotify data:", error);
+                    alert('Failed to sync data. Please check your permissions and try again.');
+                } finally {
+                    statsLoader.classList.add('hidden');
+                    statsContainer.classList.remove('hidden');
+                    syncButton.disabled = false;
+                    syncButton.textContent = 'Sync My Stats';
+                }
+            }
+            
+            async function loadStatsForTimeRange(timeRange) {
+                statsContainer.classList.add('hidden');
+                statsLoader.classList.remove('hidden');
+                artistExpansionLevel = 0;
+                trackExpansionLevel = 0;
+                
+                try {
+                    if (!viewedUser || !viewedUser.spotifyId) {
+                        console.error("Viewed user data is not available yet.");
+                        return; // Exit if user data isn't loaded
+                    }
+                    const artistsRef = db.collection('users').doc(viewedUser.spotifyId).collection('top_artists').doc(timeRange);
+                    const tracksRef = db.collection('users').doc(viewedUser.spotifyId).collection('top_tracks').doc(timeRange);
+                    const [artistsDoc, tracksDoc] = await Promise.all([artistsRef.get(), tracksRef.get()]);
+
+                    if (artistsDoc.exists && tracksDoc.exists) {
+                        allTopArtists = artistsDoc.data().items;
+                        allTopTracks = tracksDoc.data().items;
+                        renderArtists();
+                        renderTracks();
+                        renderToggleButton('artists');
+                        renderToggleButton('tracks');
+                        renderGenres(allTopArtists);
+                    } else {
+                        if (currentUser && currentUser.username === viewedUser.username) {
+                            await syncSpotifyData();
+                        } else {
+                            document.getElementById('top-artists').innerHTML = `<p class="text-slate-400 col-span-full text-center">This user hasn't synced their data for this time range yet.</p>`;
+                            document.getElementById('top-tracks').innerHTML = '';
+                            document.getElementById('genre-list').innerHTML = '';
+                            renderToggleButton('artists');
+                            renderToggleButton('tracks');
+                            if(genreChart) genreChart.destroy();
+                        }
+                    }
+                } catch (error) {
+                    console.error(`Error loading stats for ${timeRange}:`, error);
+                } finally {
+                    statsLoader.classList.add('hidden');
+                    statsContainer.classList.remove('hidden');
+                }
+            }
+            
+            // --- LIKE FUNCTIONALITY (FIXED) ---
+            async function handleLike() {
+                const likeButton = document.getElementById('like-profile-button');
+                if (!currentUser || !viewedUser || likeButton.disabled) return;
+                
+                likeButton.disabled = true;
+                likeButton.classList.add('animating');
+
+                const viewedUserRef = db.collection('users').doc(viewedUser.spotifyId);
+                const likeDocRef = db.collection('users').doc(currentUser.spotifyId).collection('likes').doc(viewedUser.spotifyId);
+                
+                try {
+                    await db.runTransaction(async (transaction) => {
+                        // --- READ FIRST ---
+                        const userDoc = await transaction.get(viewedUserRef);
+                        if (!userDoc.exists) {
+                            throw "Profile document does not exist!";
+                        }
+                        
+                        // --- THEN WRITE ---
+                        if (hasLikedProfile) {
+                            // Unlike: Decrement the count and delete the like document
+                            const newLikes = (userDoc.data().likes || 1) - 1;
+                            transaction.update(viewedUserRef, { likes: newLikes });
+                            transaction.delete(likeDocRef);
+                        } else {
+                            // Like: Increment the count and create the like document
+                            const newLikes = (userDoc.data().likes || 0) + 1;
+                            transaction.update(viewedUserRef, { likes: newLikes });
+                            transaction.set(likeDocRef, { likedAt: firebase.firestore.FieldValue.serverTimestamp() });
+                        }
+                    });
+                } catch (error) {
+                    console.error("Error handling like:", error);
+                } finally {
+                    likeButton.disabled = false;
+                    likeButton.addEventListener('animationend', () => {
+                        likeButton.classList.remove('animating');
+                    }, { once: true });
+                }
+            }
+
+
+            // --- INITIALIZATION ---
+            async function initialize() {
+                document.getElementById('copyright').innerHTML = `&copy; ${new Date().getFullYear()} RhythmDNA. All Rights Reserved.`;
+
+                if (!spotifyAccessToken) {
+                    window.location.href = 'index.html';
+                    return;
+                }
+
+                try {
+                    const params = new URLSearchParams(window.location.search);
+                    const username = params.get('user');
+                    if (!username) throw new Error("No user specified in URL.");
+
+                    await auth.signInAnonymously();
+                    const spotifyProfile = await fetchSpotifyAPI('me');
+                    const usersRef = db.collection('users');
+                    
+                    if (spotifyProfile) {
+                        const currentUserDoc = await usersRef.doc(spotifyProfile.id).get();
+                        if (currentUserDoc.exists) {
+                            currentUser = currentUserDoc.data();
+                        }
+                    }
+                    
+                    const querySnapshot = await usersRef.where('username', '==', username).limit(1).get();
+                    if (querySnapshot.empty) throw new Error("User not found.");
+                    const viewedUserDoc = querySnapshot.docs[0];
+
+                    let isInitialLoad = true;
+
+                    if (profileListener) profileListener();
+                    profileListener = viewedUserDoc.ref.onSnapshot(async (doc) => {
+                        if (!doc.exists) {
+                           throw new Error("User not found.");
+                        }
+                        viewedUser = doc.data();
+                        
+                        if (currentUser && currentUser.username !== viewedUser.username) {
+                            const likeDoc = await db.collection('users').doc(currentUser.spotifyId).collection('likes').doc(viewedUser.spotifyId).get();
+                            hasLikedProfile = likeDoc.exists;
+                        }
+                        
+                        renderProfileHeader();
+
+                        if (isInitialLoad) {
+                            pageLoader.classList.add('hidden');
+                            mainContent.classList.remove('hidden');
+                            appFooter.style.opacity = '1';
+                            renderHeader();
+                            await loadStatsForTimeRange(activeTimeRange);
+                            isInitialLoad = false;
+                        }
+                    }, (error) => {
+                        console.error("Error with profile listener:", error);
+                        errorMessage.textContent = "There was an error loading this profile in real-time.";
+                        errorState.classList.remove('hidden');
+                        pageLoader.classList.add('hidden');
+                    });
+
+                } catch (error) {
+                    console.error("Initialization failed:", error);
+                    pageLoader.classList.add('hidden');
+                    errorMessage.textContent = error.message;
+                    errorState.classList.remove('hidden');
+                }
+            }
+
+            // --- EVENT LISTENERS ---
+            statsContainer.addEventListener('click', (e) => {
+                if (e.target.classList.contains('toggle-btn')) {
+                    const type = e.target.dataset.type;
+                    if (type === 'artists') {
+                        artistExpansionLevel = (artistExpansionLevel < 2) ? artistExpansionLevel + 1 : 0;
+                        renderArtists();
+                        renderToggleButton('artists');
+                    } else if (type === 'tracks') {
+                        trackExpansionLevel = (trackExpansionLevel < 2) ? trackExpansionLevel + 1 : 0;
+                        renderTracks();
+                        renderToggleButton('tracks');
+                    }
+                }
+            });
+
+            timeRangeSelector.addEventListener('click', (e) => {
+                if (e.target.tagName === 'BUTTON' && e.target.dataset.range !== activeTimeRange) {
+                    activeTimeRange = e.target.dataset.range;
+                    timeRangeSelector.querySelector('.active').classList.remove('active');
+                    e.target.classList.add('active');
+                    loadStatsForTimeRange(activeTimeRange);
+                }
+            });
+
+            document.getElementById('cancel-edit-button').addEventListener('click', () => closeModal(editProfileModal));
+            document.getElementById('edit-profile-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const saveButton = document.getElementById('save-edit-button');
+                saveButton.disabled = true;
+                saveButton.textContent = 'Saving...';
+
+                const newDisplayName = document.getElementById('display-name-input').value;
+                const newSocials = {
+                    spotify: document.getElementById('spotify-url-input').value,
+                    instagram: document.getElementById('instagram-url-input').value,
+                    discord: document.getElementById('discord-url-input').value,
+                };
+
+                try {
+                    const userDocRef = db.collection('users').doc(currentUser.spotifyId);
+                    await userDocRef.update({ displayName: newDisplayName, socials: newSocials });
+                    closeModal(editProfileModal);
+                } catch (error) {
+                    console.error("Error updating profile:", error);
+                    alert('Failed to update profile.');
+                } finally {
+                    saveButton.disabled = false;
+                    saveButton.textContent = 'Save Changes';
+                }
+            });
+
+            initialize();
+        });
+    </script>
+</body>
+</html>
