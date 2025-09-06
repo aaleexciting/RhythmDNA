@@ -71,7 +71,7 @@
     <!-- Main Loading State -->
     <div id="page-loader" class="min-h-screen flex flex-col items-center justify-center">
         <div class="inline-block h-12 w-12 animate-spin rounded-full border-4 border-solid border-current border-r-transparent text-green-500"></div>
-        <p class="mt-4 text-slate-400">Performing deep analysis...</p>
+        <p id="loading-text" class="mt-4 text-slate-400">Performing deep analysis...</p>
     </div>
     
     <!-- Error State -->
@@ -84,7 +84,6 @@
     <!-- Main Content (Hidden by default) -->
     <div id="main-content" class="hidden w-full max-w-7xl mx-auto">
         
-        <!-- NEW: Header to match other pages -->
         <header class="flex flex-col md:flex-row justify-between items-center gap-4 mb-12">
             <a href="index.html" class="flex items-center gap-3 text-2xl font-extrabold text-white">
                 <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-green-400"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
@@ -109,7 +108,7 @@
                 </a>
             </div>
             <h1 class="text-4xl md:text-5xl font-extrabold text-white">Music Taste Comparison</h1>
-            <p id="comparison-subtitle" class="text-slate-300 mt-2">Based on a comprehensive analysis of all synced data.</p>
+            <p id="taste-profile" class="text-lg text-green-300 mt-4 h-6"></p>
         </div>
 
         <!-- Results Section -->
@@ -120,9 +119,7 @@
                     <h2 class="text-2xl font-bold text-white mb-4">Overall Similarity</h2>
                     <div class="relative w-48 h-48">
                         <svg class="w-full h-full" viewBox="0 0 100 100">
-                            <!-- Background circle -->
                             <circle class="text-slate-700" stroke-width="10" cx="50" cy="50" r="45" fill="transparent"></circle>
-                            <!-- Progress circle -->
                             <circle id="score-circle" class="text-green-400 score-circle" stroke-width="10" cx="50" cy="50" r="45" fill="transparent" stroke-linecap="round" style="transform: rotate(-90deg); transform-origin: 50% 50%;"></circle>
                         </svg>
                         <div id="overall-score" class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-5xl font-extrabold text-white">0%</div>
@@ -131,36 +128,44 @@
                 </div>
                 
                 <!-- Score Breakdown -->
-                <div class="md:col-span-2 space-y-6">
+                <div class="md:col-span-2 space-y-5">
                     <div>
                         <div class="flex justify-between items-center mb-1">
-                            <span class="font-bold text-lg text-white">Top Artists Match</span>
+                            <span class="font-bold text-lg text-white">Artist Match</span>
                             <span id="artists-score" class="font-bold text-lg text-green-400">0%</span>
                         </div>
-                        <div class="w-full bg-slate-700 rounded-full h-3">
-                            <div id="artists-bar" class="bg-green-500 h-3 rounded-full transition-all duration-1000" style="width: 0%;"></div>
-                        </div>
+                        <div class="w-full bg-slate-700 rounded-full h-3"><div id="artists-bar" class="bg-green-500 h-3 rounded-full transition-all duration-1000" style="width: 0%;"></div></div>
                     </div>
                     <div>
                         <div class="flex justify-between items-center mb-1">
-                            <span class="font-bold text-lg text-white">Top Tracks Match</span>
+                            <span class="font-bold text-lg text-white">Track Match</span>
                             <span id="tracks-score" class="font-bold text-lg text-blue-400">0%</span>
                         </div>
-                        <div class="w-full bg-slate-700 rounded-full h-3">
-                            <div id="tracks-bar" class="bg-blue-500 h-3 rounded-full transition-all duration-1000" style="width: 0%;"></div>
-                        </div>
+                        <div class="w-full bg-slate-700 rounded-full h-3"><div id="tracks-bar" class="bg-blue-500 h-3 rounded-full transition-all duration-1000" style="width: 0%;"></div></div>
                     </div>
                      <div>
                         <div class="flex justify-between items-center mb-1">
-                            <span class="font-bold text-lg text-white">Top Genres Match</span>
+                            <span class="font-bold text-lg text-white">Genre Match</span>
                             <span id="genres-score" class="font-bold text-lg text-purple-400">0%</span>
                         </div>
-                        <div class="w-full bg-slate-700 rounded-full h-3">
-                            <div id="genres-bar" class="bg-purple-500 h-3 rounded-full transition-all duration-1000" style="width: 0%;"></div>
+                        <div class="w-full bg-slate-700 rounded-full h-3"><div id="genres-bar" class="bg-purple-500 h-3 rounded-full transition-all duration-1000" style="width: 0%;"></div></div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="font-bold text-lg text-white">Era Affinity</span>
+                            <span id="era-score" class="font-bold text-lg text-amber-400">0%</span>
                         </div>
+                        <div class="w-full bg-slate-700 rounded-full h-3"><div id="era-bar" class="bg-amber-500 h-3 rounded-full transition-all duration-1000" style="width: 0%;"></div></div>
                     </div>
                 </div>
             </div>
+        </section>
+
+        <!-- Undiscovered Gems Section -->
+        <section id="gems-section" class="mt-12 hidden">
+            <h2 class="text-3xl font-bold mb-6 text-white text-center">💎 Shared Undiscovered Gems</h2>
+            <p class="text-center text-slate-400 mb-8 max-w-2xl mx-auto">You both have a taste for the road less traveled. These are shared tracks with low popularity on Spotify that you both love.</p>
+            <div id="shared-gems" class="space-y-4 max-w-2xl mx-auto"></div>
         </section>
 
         <!-- Shared Items Section -->
@@ -180,9 +185,7 @@
                 <!-- Shared Genres -->
                  <div>
                     <h3 class="text-2xl font-bold mb-4 text-white">Shared Genres</h3>
-                    <div id="shared-genres" class="flex flex-wrap gap-3">
-                        <!-- Genre tags will be injected here -->
-                    </div>
+                    <div id="shared-genres" class="flex flex-wrap gap-3"></div>
                 </div>
             </div>
         </section>
@@ -213,6 +216,7 @@
             const errorState = document.getElementById('error-state');
             const errorMessage = document.getElementById('error-message');
             const headerActions = document.getElementById('header-actions');
+            const loadingText = document.getElementById('loading-text');
 
             // --- STATE ---
             let currentUser = null;
@@ -238,19 +242,19 @@
                 return response.json();
             }
 
-            // --- SIMILARITY ALGORITHMS ---
-            function calculateSimilarity(list1, list2) {
+            // --- DEEP ANALYSIS ALGORITHMS ---
+            function calculateSimilarity(list1, list2, key = 'id') {
                 if (!list1 || !list2 || list1.length === 0 || list2.length === 0) {
                     return { percentage: 0, sharedItems: [] };
                 }
 
-                const map1 = new Map(list1.map((item, index) => [item.id, index]));
+                const map1 = new Map(list1.map((item, index) => [item[key], index]));
                 let totalScore = 0;
                 const sharedItems = [];
 
                 list2.forEach((item, index2) => {
-                    if (map1.has(item.id)) {
-                        const index1 = map1.get(item.id);
+                    if (map1.has(item[key])) {
+                        const index1 = map1.get(item[key]);
                         const score = (list1.length - index1) + (list2.length - index2);
                         totalScore += score;
                         sharedItems.push({ ...item, rank1: index1 + 1, rank2: index2 + 1 });
@@ -265,36 +269,117 @@
                 return { percentage: Math.round(percentage), sharedItems: sharedItems.sort((a,b) => (a.rank1 + a.rank2) - (b.rank1 + b.rank2)) };
             }
 
-            function calculateGenreSimilarity(artists1, artists2) {
-                const getTopGenres = (artists) => {
+            // NEW: Advanced Genre Similarity using Cosine Similarity on full listening data
+            function calculateGenreSimilarity(tracks1, artistGenres1, tracks2, artistGenres2) {
+                const getGenreProfile = (tracks, artistGenresMap) => {
                     const genreCounts = {};
-                    artists.forEach(artist => {
-                        (artist.genres || []).forEach(genre => {
-                            genreCounts[genre] = (genreCounts[genre] || 0) + 1;
-                        });
+                    if (!tracks || !artistGenresMap) return genreCounts;
+
+                    tracks.forEach(track => {
+                        if (track && track.artists) {
+                            track.artists.forEach(artist => {
+                                const genres = artistGenresMap.get(artist.id);
+                                if (genres) {
+                                    genres.forEach(genre => {
+                                        genreCounts[genre] = (genreCounts[genre] || 0) + 1;
+                                    });
+                                }
+                            });
+                        }
                     });
-                    return new Set(Object.entries(genreCounts)
-                        .sort((a, b) => b[1] - a[1])
-                        .slice(0, 30)
-                        .map(([genre]) => genre));
+                    return genreCounts;
                 };
 
-                const genres1 = getTopGenres(artists1);
-                const genres2 = getTopGenres(artists2);
+                const profile1 = getGenreProfile(tracks1, artistGenres1);
+                const profile2 = getGenreProfile(tracks2, artistGenres2);
 
-                if (genres1.size === 0 || genres2.size === 0) {
-                    return { percentage: 0, sharedItems: [] };
+                const allGenres = new Set([...Object.keys(profile1), ...Object.keys(profile2)]);
+                if (allGenres.size === 0) return { percentage: 0, sharedItems: [] };
+                
+                let dotProduct = 0;
+                let magnitude1 = 0;
+                let magnitude2 = 0;
+                const sharedGenreScores = {};
+
+                for (const genre of allGenres) {
+                    const v1 = profile1[genre] || 0;
+                    const v2 = profile2[genre] || 0;
+                    
+                    dotProduct += v1 * v2;
+                    magnitude1 += v1 * v1;
+                    magnitude2 += v2 * v2;
+
+                    if (v1 > 0 && v2 > 0) {
+                        sharedGenreScores[genre] = v1 + v2; // Simple score for ranking shared genres
+                    }
                 }
 
-                const intersection = new Set([...genres1].filter(genre => genres2.has(genre)));
-                const union = new Set([...genres1, ...genres2]);
+                magnitude1 = Math.sqrt(magnitude1);
+                magnitude2 = Math.sqrt(magnitude2);
 
-                const percentage = (intersection.size / union.size) * 100;
-                const sharedItems = Array.from(intersection).map(genre => 
-                    genre.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
-                );
+                if (magnitude1 === 0 || magnitude2 === 0) return { percentage: 0, sharedItems: [] };
 
-                return { percentage: Math.round(percentage), sharedItems: sharedItems.sort() };
+                const cosineSimilarity = dotProduct / (magnitude1 * magnitude2);
+                const percentage = Math.round(cosineSimilarity * 100);
+
+                const sharedItems = Object.entries(sharedGenreScores)
+                    .sort((a, b) => b[1] - a[1])
+                    .map(([genre]) => genre.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '));
+
+                return { percentage, sharedItems };
+            }
+
+            function analyzePopularity(artists, tracks) {
+                const totalItems = artists.length + tracks.length;
+                if (totalItems === 0) return { score: 50, profile: "Eclectic" };
+                const totalPopularity = [...artists, ...tracks].reduce((sum, item) => sum + (item.popularity || 0), 0);
+                const avgPopularity = totalPopularity / totalItems;
+
+                let profile = "Eclectic Mix";
+                if (avgPopularity > 75) profile = "Mainstream Mavens";
+                else if (avgPopularity > 50) profile = "Chart Grazers";
+                else if (avgPopularity < 30) profile = "Musical Explorers";
+                else if (avgPopularity < 45) profile = "Indie Diggers";
+                return { score: avgPopularity, profile: profile };
+            }
+
+            function calculateEraSimilarity(tracks1, tracks2) {
+                const getDecade = (dateString) => {
+                    if (!dateString) return null;
+                    const year = parseInt(dateString.substring(0, 4));
+                    if (isNaN(year)) return null;
+                    return Math.floor(year / 10) * 10;
+                };
+
+                const getDecadeProfile = (tracks) => {
+                    const decadeCounts = {};
+                    let validTracks = 0;
+                    tracks.forEach(track => {
+                        const decade = getDecade(track?.album?.release_date);
+                        if (decade) {
+                            decadeCounts[decade] = (decadeCounts[decade] || 0) + 1;
+                            validTracks++;
+                        }
+                    });
+                    return { counts: decadeCounts, total: validTracks };
+                };
+
+                const profile1 = getDecadeProfile(tracks1);
+                const profile2 = getDecadeProfile(tracks2);
+                
+                if (profile1.total === 0 || profile2.total === 0) return { percentage: 0 };
+
+                const allDecades = new Set([...Object.keys(profile1.counts), ...Object.keys(profile2.counts)]);
+                if (allDecades.size === 0) return { percentage: 0 };
+
+                let similaritySum = 0;
+                allDecades.forEach(decade => {
+                    const freq1 = (profile1.counts[decade] || 0) / profile1.total;
+                    const freq2 = (profile2.counts[decade] || 0) / profile2.total;
+                    similaritySum += Math.min(freq1, freq2);
+                });
+                
+                return { percentage: Math.round(similaritySum * 100) };
             }
             
             // --- RENDER FUNCTIONS ---
@@ -314,7 +399,6 @@
                     </a>
                 `;
 
-                // Re-attach event listeners after re-rendering
                 document.getElementById('search-form').addEventListener('submit', (e) => {
                     e.preventDefault();
                     const query = document.getElementById('search-input').value.trim().toLowerCase();
@@ -323,7 +407,7 @@
                 document.getElementById('logout-button').addEventListener('click', logout);
             }
 
-            function renderResults(user1, user2, artistsComparison, tracksComparison, genresComparison) {
+            function renderResults(user1, user2, results) {
                 // Render user info
                 document.getElementById('user1-img').src = user1.profileImage || `https://placehold.co/128x128/0f172a/FFFFFF?text=${user1.displayName.charAt(0)}`;
                 document.getElementById('user2-img').src = user2.profileImage || `https://placehold.co/128x128/0f172a/FFFFFF?text=${user2.displayName.charAt(0)}`;
@@ -331,9 +415,15 @@
                 document.getElementById('user2-name').textContent = `@${user2.username}`;
                 document.getElementById('user1-link').href = `profile.html?user=${user1.username}`;
                 document.getElementById('user2-link').href = `profile.html?user=${user2.username}`;
+                document.getElementById('taste-profile').textContent = results.tasteProfile;
 
-                // Calculate overall score (weighted: 50% artists, 30% tracks, 20% genres)
-                const overallScore = Math.round((artistsComparison.percentage * 0.5) + (tracksComparison.percentage * 0.3) + (genresComparison.percentage * 0.2));
+                // Calculate overall score (weighted: 40% artists, 25% tracks, 20% genres, 15% era)
+                const overallScore = Math.round(
+                    (results.artists.percentage * 0.40) + 
+                    (results.tracks.percentage * 0.25) + 
+                    (results.genres.percentage * 0.20) + 
+                    (results.era.percentage * 0.15)
+                );
                 
                 // Animate scores after a short delay
                 setTimeout(() => {
@@ -350,123 +440,182 @@
                     else if (overallScore > 25) verdict = "On a Different Wavelength.";
                     document.getElementById('score-verdict').textContent = verdict;
 
-                    document.getElementById('artists-score').textContent = `${artistsComparison.percentage}%`;
-                    document.getElementById('artists-bar').style.width = `${artistsComparison.percentage}%`;
-                    document.getElementById('tracks-score').textContent = `${tracksComparison.percentage}%`;
-                    document.getElementById('tracks-bar').style.width = `${tracksComparison.percentage}%`;
-                    document.getElementById('genres-score').textContent = `${genresComparison.percentage}%`;
-                    document.getElementById('genres-bar').style.width = `${genresComparison.percentage}%`;
+                    document.getElementById('artists-score').textContent = `${results.artists.percentage}%`;
+                    document.getElementById('artists-bar').style.width = `${results.artists.percentage}%`;
+                    document.getElementById('tracks-score').textContent = `${results.tracks.percentage}%`;
+                    document.getElementById('tracks-bar').style.width = `${results.tracks.percentage}%`;
+                    document.getElementById('genres-score').textContent = `${results.genres.percentage}%`;
+                    document.getElementById('genres-bar').style.width = `${results.genres.percentage}%`;
+                    document.getElementById('era-score').textContent = `${results.era.percentage}%`;
+                    document.getElementById('era-bar').style.width = `${results.era.percentage}%`;
                 }, 500);
 
                 // Render shared artists
                 const sharedArtistsContainer = document.getElementById('shared-artists');
-                if (artistsComparison.sharedItems.length > 0) {
-                    sharedArtistsContainer.innerHTML = artistsComparison.sharedItems.map(artist => `
+                if (results.artists.sharedItems.length > 0) {
+                    sharedArtistsContainer.innerHTML = results.artists.sharedItems.slice(0, 5).map(artist => `
                         <div class="glass-card rounded-lg p-3 flex items-center gap-4">
-                            <img src="${artist.images[0]?.url}" class="w-16 h-16 rounded-md object-cover">
-                            <div class="flex-grow overflow-hidden">
-                                <p class="font-bold text-white truncate">${artist.name}</p>
-                                <div class="flex flex-wrap gap-x-4 gap-y-1 text-sm text-slate-400 mt-1">
-                                    <span>${user1.username}'s Rank: <b class="text-white">#${artist.rank1}</b></span>
-                                    <span>${user2.username}'s Rank: <b class="text-white">#${artist.rank2}</b></span>
-                                </div>
-                            </div>
-                        </div>
-                    `).join('');
+                            <img src="${artist.images[0]?.url || 'https://placehold.co/64x64/0f172a/FFFFFF?text=?'}" class="w-16 h-16 rounded-md object-cover">
+                            <div class="flex-grow overflow-hidden"><p class="font-bold text-white truncate">${artist.name}</p></div>
+                        </div>`).join('');
                 } else {
                     sharedArtistsContainer.innerHTML = `<p class="text-slate-400 text-center">No shared top artists.</p>`;
                 }
 
                 // Render shared tracks
                 const sharedTracksContainer = document.getElementById('shared-tracks');
-                if (tracksComparison.sharedItems.length > 0) {
-                    sharedTracksContainer.innerHTML = tracksComparison.sharedItems.map(track => `
+                if (results.tracks.sharedItems.length > 0) {
+                    sharedTracksContainer.innerHTML = results.tracks.sharedItems.slice(0, 5).map(track => `
                          <div class="glass-card rounded-lg p-3 flex items-center gap-4">
-                            <img src="${track.album.images[0]?.url}" class="w-16 h-16 rounded-md object-cover">
+                            <img src="${track.album.images[0]?.url || 'https://placehold.co/64x64/0f172a/FFFFFF?text=?'}" class="w-16 h-16 rounded-md object-cover">
                             <div class="flex-grow overflow-hidden">
                                 <p class="font-bold text-white truncate">${track.name}</p>
                                 <p class="text-sm text-slate-300 truncate">${track.artists.map(a => a.name).join(', ')}</p>
-                                <div class="flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-400 mt-1">
-                                    <span>${user1.username}'s Rank: <b class="text-white">#${track.rank1}</b></span>
-                                    <span>${user2.username}'s Rank: <b class="text-white">#${track.rank2}</b></span>
-                                </div>
                             </div>
-                        </div>
-                    `).join('');
+                        </div>`).join('');
                 } else {
                     sharedTracksContainer.innerHTML = `<p class="text-slate-400 text-center">No shared top tracks.</p>`;
                 }
 
                 // Render shared genres
                 const sharedGenresContainer = document.getElementById('shared-genres');
-                if (genresComparison.sharedItems.length > 0) {
-                    sharedGenresContainer.innerHTML = genresComparison.sharedItems.map(genre => `
-                        <span class="bg-slate-700 text-purple-300 text-sm font-medium px-3 py-1 rounded-full">${genre}</span>
-                    `).join('');
+                if (results.genres.sharedItems.length > 0) {
+                    sharedGenresContainer.innerHTML = results.genres.sharedItems.slice(0, 15).map(genre => `
+                        <span class="bg-slate-700 text-purple-300 text-sm font-medium px-3 py-1 rounded-full">${genre}</span>`).join('');
                 } else {
                     sharedGenresContainer.innerHTML = `<p class="text-slate-400 text-center w-full">No shared top genres.</p>`;
+                }
+
+                // Render undiscovered gems
+                const gemsContainer = document.getElementById('shared-gems');
+                if (results.gems.length > 0) {
+                    document.getElementById('gems-section').classList.remove('hidden');
+                    gemsContainer.innerHTML = results.gems.map(track => `
+                         <div class="glass-card rounded-lg p-3 flex items-center gap-4">
+                            <img src="${track.album.images[0]?.url || 'https://placehold.co/64x64/0f172a/FFFFFF?text=?'}" class="w-16 h-16 rounded-md object-cover">
+                            <div class="flex-grow overflow-hidden">
+                                <p class="font-bold text-white truncate">${track.name}</p>
+                                <p class="text-sm text-slate-300 truncate">${track.artists.map(a => a.name).join(', ')}</p>
+                                <p class="text-xs text-slate-400 mt-1">Popularity: ${track.popularity}</p>
+                            </div>
+                        </div>`).join('');
                 }
             }
 
             // --- INITIALIZATION ---
             async function initialize() {
                 try {
+                    const params = new URLSearchParams(window.location.search);
+                    const username1 = params.get('user1');
+                    const username2 = params.get('user2');
+
+                    if (!username1 || !username2) {
+                        throw new Error("Two usernames are required for comparison.");
+                    }
+
+                    // ROBUSTNESS: Handle comparing a user to themselves
+                    if (username1.toLowerCase() === username2.toLowerCase()) {
+                        throw new Error("Feeling introspective? Try comparing with another user to discover new music!");
+                    }
+
+                    loadingText.textContent = 'Authenticating...';
                     await auth.signInAnonymously();
-                     // Fetch current user info for the header profile button
+                     
                     if (spotifyAccessToken) {
                         const spotifyProfile = await fetchSpotifyAPI('me');
                         if (spotifyProfile) {
                             const userDoc = await db.collection('users').doc(spotifyProfile.id).get();
-                            if (userDoc.exists) {
-                                currentUser = userDoc.data();
-                            }
+                            if (userDoc.exists) currentUser = userDoc.data();
                         }
                     }
-                    renderHeader();
-
-                    const params = new URLSearchParams(window.location.search);
-                    const username1 = params.get('user1');
-                    const username2 = params.get('user2');
-                    if (!username1 || !username2) throw new Error("Two usernames are required for comparison.");
+                    renderHeader(); // RENDER HEADER for consistency
 
                     const usersRef = db.collection('users');
                     
                     const fetchDataForUser = async (username) => {
+                        loadingText.textContent = `Fetching data for @${username}...`;
                         const userQuery = await usersRef.where('username', '==', username).limit(1).get();
                         if (userQuery.empty) throw new Error(`User @${username} not found.`);
                         const userProfile = userQuery.docs[0].data();
                         const spotifyId = userProfile.spotifyId;
 
                         const timeRanges = ['short_term', 'medium_term', 'long_term'];
-                        const artistPromises = timeRanges.map(range => usersRef.doc(spotifyId).collection('top_artists').doc(range).get());
-                        const trackPromises = timeRanges.map(range => usersRef.doc(spotifyId).collection('top_tracks').doc(range).get());
+                        const topArtistPromises = timeRanges.map(range => usersRef.doc(spotifyId).collection('top_artists').doc(range).get());
+                        const topTrackPromises = timeRanges.map(range => usersRef.doc(spotifyId).collection('top_tracks').doc(range).get());
+                        const historyPromise = usersRef.doc(spotifyId).collection('listening_data').doc('recently_played').get();
+                        const libraryPromise = usersRef.doc(spotifyId).collection('listening_data').doc('recently_saved').get();
+                        // NEW: Fetch the comprehensive artist genre map
+                        const artistGenresPromise = usersRef.doc(spotifyId).collection('listening_data').doc('artist_genres').get();
 
-                        const artistDocs = await Promise.all(artistPromises);
-                        const trackDocs = await Promise.all(trackPromises);
 
-                        const allArtists = artistDocs.flatMap(doc => doc.exists ? doc.data().items : []);
-                        const allTracks = trackDocs.flatMap(doc => doc.exists ? doc.data().items : []);
+                        const docs = await Promise.all([...topArtistPromises, ...topTrackPromises, historyPromise, libraryPromise, artistGenresPromise]);
+                        const [
+                            shortArtists, mediumArtists, longArtists,
+                            shortTracks, mediumTracks, longTracks,
+                            historyDoc, libraryDoc, artistGenresDoc
+                        ] = docs;
 
-                        if (allArtists.length === 0 || allTracks.length === 0) {
-                            throw new Error(`@${username} has insufficient listening data to compare.`);
+                        const allArtists = [
+                            ...(shortArtists.exists ? shortArtists.data().items : []),
+                            ...(mediumArtists.exists ? mediumArtists.data().items : []),
+                            ...(longArtists.exists ? longArtists.data().items : [])
+                        ];
+                        const allTracks = [
+                            ...(shortTracks.exists ? shortTracks.data().items : []),
+                            ...(mediumTracks.exists ? mediumTracks.data().items : []),
+                            ...(longTracks.exists ? longTracks.data().items : []),
+                            ...(historyDoc.exists ? historyDoc.data().items.map(i => i.track) : []),
+                            ...(libraryDoc.exists ? libraryDoc.data().items.map(i => i.track) : [])
+                        ].filter(track => track); // Filter out null tracks
+
+                        if (allArtists.length === 0 || allTracks.length === 0 || !artistGenresDoc.exists) {
+                            throw new Error(`@${username} has not synced their data yet or has insufficient listening history.`);
+                        }
+                        
+                        // NEW: Create a Map for fast genre lookups
+                        const artistGenresMap = new Map();
+                        if (artistGenresDoc.exists) {
+                            artistGenresDoc.data().artists.forEach(artist => {
+                                if (artist && artist.id && artist.genres) {
+                                    artistGenresMap.set(artist.id, artist.genres);
+                                }
+                            });
                         }
 
-                        // Deduplicate items to create a master list
                         const masterArtists = Array.from(new Map(allArtists.map(item => [item.id, item])).values());
                         const masterTracks = Array.from(new Map(allTracks.map(item => [item.id, item])).values());
                         
-                        return { profile: userProfile, artists: masterArtists, tracks: masterTracks };
+                        return { profile: userProfile, artists: masterArtists, tracks: masterTracks, artistGenres: artistGenresMap };
                     };
 
                     const [data1, data2] = await Promise.all([fetchDataForUser(username1), fetchDataForUser(username2)]);
                     
+                    loadingText.textContent = 'Calculating similarities...';
+
                     const artistsComparison = calculateSimilarity(data1.artists, data2.artists);
                     const tracksComparison = calculateSimilarity(data1.tracks, data2.tracks);
-                    const genresComparison = calculateGenreSimilarity(data1.artists, data2.artists);
+                    // UPDATED: Pass the full track lists and new genre maps to the new function
+                    const genresComparison = calculateGenreSimilarity(data1.tracks, data1.artistGenres, data2.tracks, data2.artistGenres);
+                    const eraComparison = calculateEraSimilarity(data1.tracks, data2.tracks);
+
+                    const pop1 = analyzePopularity(data1.artists, data1.tracks);
+                    const pop2 = analyzePopularity(data2.artists, data2.tracks);
+                    const tasteProfile = (pop1.profile === pop2.profile) ? `You're both ${pop1.profile}!` : `A tale of two tastes.`;
+
+                    const gems = tracksComparison.sharedItems.filter(track => track.popularity < 35);
+
+                    const results = {
+                        artists: artistsComparison,
+                        tracks: tracksComparison,
+                        genres: genresComparison,
+                        era: eraComparison,
+                        tasteProfile: tasteProfile,
+                        gems: gems
+                    };
 
                     pageLoader.classList.add('hidden');
                     mainContent.classList.remove('hidden');
-                    renderResults(data1.profile, data2.profile, artistsComparison, tracksComparison, genresComparison);
+                    renderResults(data1.profile, data2.profile, results);
 
                 } catch (error) {
                     console.error("Comparison failed:", error);
