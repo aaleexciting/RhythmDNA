@@ -143,9 +143,10 @@
             };
 
             // --- SPOTIFY CONFIGURATION ---
-            // The CLIENT_ID is safe to be public for the PKCE flow
             const CLIENT_ID = "b09cf9ddbda34db8976d0b55c232eba7";
-            const REDIRECT_URI = window.location.origin + window.location.pathname;
+            // ##### THIS IS THE FIX #####
+            // We hardcode the URI to ensure it's always the same on every device.
+            const REDIRECT_URI = "https://rhythmdna.ardhan.my.id/";
 
             // --- INITIALIZE SERVICES ---
             firebase.initializeApp(firebaseConfig);
@@ -214,9 +215,7 @@
                     alert("Could not redirect to Spotify. Please check the console for errors.");
                 }
             }
-
-            // ##### UPDATED FUNCTION #####
-            // This now calls our secure Netlify Function instead of Spotify directly.
+            
             async function getAccessToken(code) {
                 const codeVerifier = localStorage.getItem('code_verifier');
                 
