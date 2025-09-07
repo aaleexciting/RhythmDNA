@@ -5,24 +5,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>RhythmDNA - Discover Your Music Identity</title>
     
-    <!-- Tailwind CSS for styling -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- Google Fonts: Inter -->
+    <script src="https://cdn.tailwindcss.com"></script>    
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     
-    <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
     
     <style>
-        /* Custom styles for the modern glassmorphism UI */
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #0f172a; /* Fallback color */
+            background-color: #0f172a;
             background-image: 
                 radial-gradient(at 27% 37%, hsla(215, 98%, 61%, 0.1) 0px, transparent 50%),
                 radial-gradient(at 97% 21%, hsla(145, 78%, 62%, 0.1) 0px, transparent 50%),
@@ -78,7 +73,6 @@
             to { opacity: 0; transform: translateY(-20px); }
         }
         
-        /* Custom focus styles for inputs */
         .form-input:focus {
             outline: none;
             box-shadow: 0 0 0 3px rgba(29, 185, 84, 0.5);
@@ -89,13 +83,11 @@
 
     <main id="app-container" class="w-full max-w-md mx-auto">
         
-        <!-- Loading State: Shown on initial page load -->
         <div id="loading-state" class="text-center">
             <div class="inline-block h-10 w-10 animate-spin rounded-full border-4 border-solid border-current border-r-transparent align-[-0.125em] text-green-500 motion-reduce:animate-[spin_1.5s_linear_infinite]" role="status"></div>
             <p class="mt-4 text-slate-400">Connecting...</p>
         </div>
 
-        <!-- Login State: The main entry point -->
         <div id="login-state" class="hidden">
             <div class="glass-card rounded-2xl p-8 md:p-10 text-center fade-in">
                 <div class="flex justify-center items-center gap-3 mb-4">
@@ -106,12 +98,13 @@
                 <button id="login-button" class="btn-primary w-full py-3 px-8 rounded-full text-lg">
                     Login with Spotify
                 </button>
-                 <!-- ##### NEW: Error display area ##### -->
+                <div class="mt-6 text-xs text-slate-500">
+                    <p>Please note: Due to Spotify's API policy changes, this app is in a permanent development mode and is limited to a small group of approved users. It serves as a portfolio piece.</p>
+                </div>
                 <div id="error-display" class="mt-4 p-4 bg-red-900/50 border border-red-500/50 text-red-300 text-sm rounded-lg hidden"></div>
             </div>
         </div>
 
-        <!-- Onboarding State: For new users -->
         <div id="onboarding-state" class="hidden">
             <div class="glass-card rounded-2xl p-8 md:p-10 text-center fade-in">
                 <h1 class="text-3xl font-bold mb-2 text-white">Welcome!</h1>
@@ -133,7 +126,6 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            // --- FIREBASE CONFIGURATION ---
             const firebaseConfig = {
                 apiKey: "AIzaSyCvvIIh1Zn3m9Uf9312Qvz4yqLeOX5ksMs",
                 authDomain: "rhythmdna.firebaseapp.com",
@@ -144,16 +136,13 @@
                 measurementId: "G-R6SR7H9EWY"
             };
 
-            // --- SPOTIFY CONFIGURATION ---
             const CLIENT_ID = "b09cf9ddbda34db8976d0b55c232eba7";
             const REDIRECT_URI = "https://rhythmdna.ardhan.my.id/";
 
-            // --- INITIALIZE SERVICES ---
             firebase.initializeApp(firebaseConfig);
             const auth = firebase.auth();
             const db = firebase.firestore();
 
-            // --- DOM ELEMENTS ---
             const loadingState = document.getElementById('loading-state');
             const loginState = document.getElementById('login-state');
             const onboardingState = document.getElementById('onboarding-state');
@@ -164,7 +153,6 @@
             const onboardingSubmitBtn = document.getElementById('onboarding-submit');
             const errorDisplay = document.getElementById('error-display'); // New element
 
-            // --- UI STATE MANAGEMENT ---
             function showState(state) {
                 loadingState.classList.add('hidden');
                 loginState.classList.add('hidden');
@@ -175,7 +163,6 @@
                 if (state === 'onboarding') onboardingState.classList.remove('hidden');
             }
 
-            // --- PKCE HELPER FUNCTIONS ---
             function generateRandomString(length) {
                 const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
                 let text = '';
@@ -192,7 +179,6 @@
                     .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
             }
 
-            // --- AUTHENTICATION FLOW ---
             async function redirectToSpotifyLogin() {
                 try {
                     const codeVerifier = generateRandomString(128);
@@ -262,7 +248,6 @@
                 return response.json();
             }
 
-            // --- ONBOARDING LOGIC ---
             async function handleOnboarding(spotifyProfile) {
                 showState('onboarding');
                 onboardingForm.addEventListener('submit', async (e) => {
@@ -304,7 +289,6 @@
                 });
             }
 
-            // --- INITIALIZATION LOGIC ---
             async function initialize() {
                 const params = new URLSearchParams(window.location.search);
                 const code = params.get('code');
@@ -359,12 +343,11 @@
                 }
             }
 
-            // --- EVENT LISTENERS ---
             loginButton.addEventListener('click', redirectToSpotifyLogin);
 
-            // --- START THE APP ---
             initialize();
         });
     </script>
 </body>
 </html>
+
