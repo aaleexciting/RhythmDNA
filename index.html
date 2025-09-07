@@ -106,6 +106,8 @@
                 <button id="login-button" class="btn-primary w-full py-3 px-8 rounded-full text-lg">
                     Login with Spotify
                 </button>
+                 <!-- ##### NEW: Error display area ##### -->
+                <div id="error-display" class="mt-4 p-4 bg-red-900/50 border border-red-500/50 text-red-300 text-sm rounded-lg hidden"></div>
             </div>
         </div>
 
@@ -144,8 +146,6 @@
 
             // --- SPOTIFY CONFIGURATION ---
             const CLIENT_ID = "b09cf9ddbda34db8976d0b55c232eba7";
-            // ##### THIS IS THE FIX #####
-            // We hardcode the URI to ensure it's always the same on every device.
             const REDIRECT_URI = "https://rhythmdna.ardhan.my.id/";
 
             // --- INITIALIZE SERVICES ---
@@ -162,6 +162,7 @@
             const usernameInput = document.getElementById('username-input');
             const usernameError = document.getElementById('username-error');
             const onboardingSubmitBtn = document.getElementById('onboarding-submit');
+            const errorDisplay = document.getElementById('error-display'); // New element
 
             // --- UI STATE MANAGEMENT ---
             function showState(state) {
@@ -318,6 +319,8 @@
                         history.pushState({}, '', url);
                     } catch (error) {
                         console.error("Error getting Spotify token:", error);
+                        errorDisplay.textContent = `Could not get login token. Details: ${error.message}`;
+                        errorDisplay.classList.remove('hidden');
                         showState('login');
                         return;
                     }
@@ -334,7 +337,7 @@
                     await auth.signInAnonymously();
                     const spotifyProfile = await fetchSpotifyAPI('me', accessToken);
                     if (!spotifyProfile || !spotifyProfile.id) {
-                        throw new Error("Could not fetch Spotify profile.");
+                        throw new Error("Could not fetch Spotify profile. The account may be missing required information.");
                     }
 
                     const userDocRef = db.collection('users').doc(spotifyProfile.id);
@@ -347,8 +350,11 @@
                         await handleOnboarding(spotifyProfile);
                     }
                 } catch (error) {
+                    // ##### UPDATED: This now shows the error on screen #####
                     console.error("Initialization failed:", error);
                     localStorage.removeItem('spotify_access_token');
+                    errorDisplay.textContent = `Initialization failed. Details: ${error.message}`;
+                    errorDisplay.classList.remove('hidden');
                     showState('login');
                 }
             }
